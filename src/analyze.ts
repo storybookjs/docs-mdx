@@ -2,16 +2,16 @@ import * as t from '@babel/types';
 import toBabel from 'estree-to-babel';
 import traverse from '@babel/traverse';
 
-export const NO_TITLE = '__sb_undefined__';
-export const OF_TITLE = '__sb_of__:';
-
 const getAttr = (elt: t.JSXOpeningElement, what: string): t.JSXAttribute['value'] | undefined => {
   const attr = (elt.attributes as t.JSXAttribute[]).find((n) => n.name.name === what);
   return attr?.value;
 };
 
 const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
-  let title: string;
+  const result = { title: undefined, of: undefined } as {
+    title: string | undefined;
+    of: string | undefined;
+  };
   let contents: t.ExpressionStatement;
   root.program.body.forEach((child) => {
     if (t.isExpressionStatement(child) && t.isJSXFragment(child.expression)) {
@@ -26,13 +26,13 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
         if (t.isJSXIdentifier(child.openingElement.name)) {
           const name = child.openingElement.name.name;
           if (name === 'Meta') {
-            if (title) {
+            if (result.title) {
               throw new Error('Meta can only be declared once');
             }
             const titleAttr = getAttr(child.openingElement, 'title');
             if (titleAttr) {
               if (t.isStringLiteral(titleAttr)) {
-                title = titleAttr.value;
+                result.title = titleAttr.value;
               } else {
                 throw new Error(`Expected string literal title, received ${titleAttr.type}`);
               }
@@ -44,7 +44,7 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
                 if (t.isIdentifier(of)) {
                   const importName = varToImport[of.name];
                   if (importName) {
-                    title = `${OF_TITLE}${importName}`;
+                    result.of = importName;
                   } else {
                     throw new Error(`Unknown identifier ${of.name}`);
                   }
@@ -65,11 +65,7 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
     });
   }
 
-  if (title) {
-    return title;
-  } else {
-    return NO_TITLE;
-  }
+  return result;
 };
 
 export const extractImports = (root: t.File) => {
@@ -104,7 +100,10 @@ export const plugin = (store: any) => (root: any) => {
   // we're not using it again
   // const clone = cloneDeep(estree);
   const babel = toBabel(estree);
-  store.title = extractTitle(babel, varToImport);
+  const { title, of } = extractTitle(babel, varToImport);
+  store.title = title;
+  store.of = of;
+  store.imports = Array.from(new Set(Object.values(varToImport)));
 
   return root;
 };
@@ -113,15 +112,10 @@ export const analyze = (code: string) => {
   const { compileSync } = require('@mdx-js/mdx');
   const { toEstree } = require('hast-util-to-estree');
 
-  const store = { title: undefined, toEstree } as any;
+  const store = { title: undefined, of: undefined, imports: undefined, toEstree } as any;
   compileSync(code, {
     rehypePlugins: [[plugin, store]],
   });
-  const { title } = store;
-  if (title === NO_TITLE) {
-    return { title: undefined };
-  } else if (title.startsWith(OF_TITLE)) {
-    return { of: title.substring(OF_TITLE.length) };
-  }
-  return { title };
+  const { title, of, imports = [] } = store;
+  return { title, of, imports };
 };

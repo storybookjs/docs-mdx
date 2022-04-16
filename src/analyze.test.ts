@@ -32,8 +32,10 @@ describe('analyze', () => {
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
         Object {
+          "imports": Array [],
+          "of": undefined,
           "title": "foobar",
-        }
+      }
       `);
     });
     it('template literal title', () => {
@@ -67,7 +69,12 @@ describe('analyze', () => {
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
         Object {
+          "imports": Array [
+            "@storybook/blocks",
+            "./Button.stories",
+          ],
           "of": "./Button.stories",
+          "title": undefined,
         }
       `);
     });
@@ -95,6 +102,8 @@ describe('analyze', () => {
     `;
       expect(analyze(input)).toMatchInlineSnapshot(`
         Object {
+          "imports": Array [],
+          "of": undefined,
           "title": undefined,
         }
       `);
@@ -106,10 +115,14 @@ describe('analyze', () => {
       <Meta of={meta} />/>
     `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-      Object {
-        "title": undefined,
-      }
-    `);
+        Object {
+          "imports": Array [
+            "./Button.stories",
+          ],
+          "of": undefined,
+          "title": undefined,
+        }
+      `);
     });
   });
 });
