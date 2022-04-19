@@ -1,6 +1,8 @@
 import * as t from '@babel/types';
 import toBabel from 'estree-to-babel';
 import traverse from '@babel/traverse';
+import { compileSync } from '@mdx-js/mdx';
+import { toEstree } from 'hast-util-to-estree';
 
 const getAttr = (elt: t.JSXOpeningElement, what: string): t.JSXAttribute['value'] | undefined => {
   const attr = (elt.attributes as t.JSXAttribute[]).find((n) => n.name.name === what);
@@ -109,9 +111,6 @@ export const plugin = (store: any) => (root: any) => {
 };
 
 export const analyze = (code: string) => {
-  const { compileSync } = require('@mdx-js/mdx');
-  const { toEstree } = require('hast-util-to-estree');
-
   const store = { title: undefined, of: undefined, imports: undefined, toEstree } as any;
   compileSync(code, {
     rehypePlugins: [[plugin, store]],
