@@ -31,12 +31,12 @@ describe('analyze', () => {
         <Meta title="foobar" />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [],
-          "of": undefined,
-          "title": "foobar",
-      }
-      `);
+Object {
+  "imports": Array [],
+  "of": undefined,
+  "title": "foobar",
+}
+`);
     });
     it('template literal title', () => {
       const input = dedent`

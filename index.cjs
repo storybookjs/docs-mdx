@@ -1,1 +1,1 @@
-module.exports = async () => import('./dist/esm/index');
+module.exports = (async () => import('./dist/esm/index.js'))();
