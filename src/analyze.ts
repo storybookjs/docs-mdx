@@ -1,6 +1,6 @@
 import * as t from '@babel/types';
 import toBabel from 'estree-to-babel';
-import traverse from '@babel/traverse';
+import * as babelTraverse from '@babel/traverse';
 import { compileSync } from '@mdx-js/mdx';
 import { toEstree } from 'hast-util-to-estree';
 
@@ -70,9 +70,35 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
   return result;
 };
 
+/**
+ * This is a hack to get around inconsistencies between
+ * Babel's own weird interop code AND the typescript types (definitelyTyped)
+ * and the fact that we're using `type: "module"` in this package
+ * which has some weird behaviors
+ */
+const getTraverse = (input: any): typeof babelTraverse.default => {
+  switch (true) {
+    case typeof input === 'function': {
+      return input;
+    }
+    case typeof input.traverse === 'function': {
+      return input.traverse;
+    }
+    case typeof input.default === 'function': {
+      return input.default;
+    }
+    case typeof input.default.default === 'function': {
+      return input.default.default;
+    }
+    default: {
+      throw new Error(`Unable to get traverse function from ${input}`);
+    }
+  }
+};
+
 export const extractImports = (root: t.File) => {
   const varToImport = {} as Record<string, string>;
-  traverse(root, {
+  getTraverse(babelTraverse)(root, {
     ImportDeclaration: {
       enter({ node }) {
         const { source, specifiers } = node;
