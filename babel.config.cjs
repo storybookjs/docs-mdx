@@ -3,7 +3,7 @@ const ignore = process.env.IGNORE_FILES ? ['**/*.test.ts', '**/*.d.ts'] : [];
 module.exports = {
   presets: [['@babel/preset-env', { targets: { node: 'current' } }], '@babel/preset-typescript'],
   env: {
-    esm: {
+    dist: {
       presets: [
         [
           '@babel/preset-env',
@@ -13,6 +13,7 @@ module.exports = {
           },
         ],
       ],
+      plugins: ['babel-plugin-add-import-extension'],
     },
   },
   ignore,

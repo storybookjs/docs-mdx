@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "clean": "rimraf ./dist",
-    "buildBabel": "babel ./src -d ./dist/esm --env-name esm --extensions \".js,.jsx,.ts,.tsx\"",
+    "buildBabel": "babel ./src -d ./dist/esm --env-name dist --extensions \".js,.jsx,.ts,.tsx\"",
     "buildTsc": "tsc --declaration --emitDeclarationOnly --outDir ./dist/ts",
     "prebuild": "yarn clean",
     "build": "concurrently \"yarn buildBabel\" \"yarn buildTsc\"",
@@ -40,9 +40,9 @@
     "hast-util-to-estree": "^2.0.2"
   },
   "devDependencies": {
-    "@babel/parser": "^7.12.11",
     "@babel/cli": "^7.12.1",
     "@babel/core": "^7.12.3",
+    "@babel/parser": "^7.12.11",
     "@babel/preset-env": "^7.12.1",
     "@babel/preset-typescript": "^7.13.0",
     "@babel/types": "^7.14.8",
@@ -52,6 +52,7 @@
     "auto": "^10.3.0",
     "babel-jest": "^27.0.6",
     "babel-loader": "^8.1.0",
+    "babel-plugin-add-import-extension": "^1.6.0",
     "concurrently": "^7.0.0",
     "husky": ">=6",
     "jest": "^27.0.6",
