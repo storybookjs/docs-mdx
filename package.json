@@ -16,6 +16,7 @@
     "README.md",
     "*.js",
     "*.d.ts",
+    "index.mjs",
     "index.cjs"
   ],
   "scripts": {
