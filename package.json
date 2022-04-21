@@ -4,13 +4,12 @@
   "description": "Storybook Docs MDX analyzer",
   "repository": {
     "type": "git",
-    "url": "https://github.com/storybookjs/docs2-mdx"
+    "url": "https://github.com/storybookjs/docs-mdx"
   },
   "author": "Michael Shilman <michael@lab80.co>",
   "license": "MIT",
   "type": "module",
-  "main": "index.cjs",
-  "module": "dist/esm/index.js",
+  "main": "index",
   "types": "dist/ts/index.d.ts",
   "files": [
     "dist/**/*",
