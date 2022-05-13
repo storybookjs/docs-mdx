@@ -31,12 +31,12 @@ describe('analyze', () => {
         <Meta title="foobar" />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [],
-  "of": undefined,
-  "title": "foobar",
-}
-`);
+        Object {
+          "imports": Array [],
+          "of": undefined,
+          "title": "foobar",
+        }
+      `);
     });
     it('template literal title', () => {
       const input = dedent`
@@ -110,16 +110,34 @@ Object {
     });
     it('Bad MDX formatting', () => {
       const input = dedent`
-      import meta, { Basic } from './Button.stories';
+        import meta, { Basic } from './Button.stories';
 
-      <Meta of={meta} />/>
-    `;
+        <Meta of={meta} />/>
+      `;
       expect(analyze(input)).toMatchInlineSnapshot(`
         Object {
           "imports": Array [
             "./Button.stories",
           ],
           "of": undefined,
+          "title": undefined,
+        }
+      `);
+    });
+    it('MDX comments', () => {
+      const input = dedent`
+        import meta, { Basic } from './Button.stories';
+
+        <Meta of={meta} />
+
+        {/* whatever */}
+      `;
+      expect(analyze(input)).toMatchInlineSnapshot(`
+        Object {
+          "imports": Array [
+            "./Button.stories",
+          ],
+          "of": "./Button.stories",
           "title": undefined,
         }
       `);

@@ -59,8 +59,8 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
             }
           }
         }
-      } else if (t.isJSXExpressionContainer(child) && t.isStringLiteral(child.expression)) {
-        // Skip string literals
+      } else if (t.isJSXExpressionContainer(child)) {
+        // Skip string literals & other JSX expressions
       } else {
         throw new Error(`Unexpected JSX child: ${child.type}`);
       }
