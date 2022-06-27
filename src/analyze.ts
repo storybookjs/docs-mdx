@@ -4,15 +4,24 @@ import * as babelTraverse from '@babel/traverse';
 import { compileSync } from '@mdx-js/mdx';
 import { toEstree } from 'hast-util-to-estree';
 
-const getAttr = (elt: t.JSXOpeningElement, what: string): t.JSXAttribute['value'] | undefined => {
+const getAttr = (elt: t.JSXOpeningElement, what: string): t.JSXAttribute | undefined => {
   const attr = (elt.attributes as t.JSXAttribute[]).find((n) => n.name.name === what);
-  return attr?.value;
+  return attr;
+};
+
+const getAttrValue = (
+  elt: t.JSXOpeningElement,
+  what: string
+): t.JSXAttribute['value'] | undefined => {
+  return getAttr(elt, what)?.value;
 };
 
 const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
-  const result = { title: undefined, of: undefined } as {
+  const result = { title: undefined, of: undefined, name: undefined, isTemplate: false } as {
     title: string | undefined;
     of: string | undefined;
+    name: string | undefined;
+    isTemplate: boolean;
   };
   let contents: t.ExpressionStatement;
   root.program.body.forEach((child) => {
@@ -28,21 +37,29 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
         if (t.isJSXIdentifier(child.openingElement.name)) {
           const name = child.openingElement.name.name;
           if (name === 'Meta') {
-            if (result.title) {
+            if (result.title || result.name || result.of) {
               throw new Error('Meta can only be declared once');
             }
-            const titleAttr = getAttr(child.openingElement, 'title');
-            if (titleAttr) {
-              if (t.isStringLiteral(titleAttr)) {
-                result.title = titleAttr.value;
+            const titleAttrValue = getAttrValue(child.openingElement, 'title');
+            if (titleAttrValue) {
+              if (t.isStringLiteral(titleAttrValue)) {
+                result.title = titleAttrValue.value;
               } else {
-                throw new Error(`Expected string literal title, received ${titleAttr.type}`);
+                throw new Error(`Expected string literal title, received ${titleAttrValue.type}`);
               }
             }
-            const ofAttr = getAttr(child.openingElement, 'of');
-            if (ofAttr) {
-              if (t.isJSXExpressionContainer(ofAttr)) {
-                const of = ofAttr.expression;
+            const nameAttrValue = getAttrValue(child.openingElement, 'name');
+            if (nameAttrValue) {
+              if (t.isStringLiteral(nameAttrValue)) {
+                result.name = nameAttrValue.value;
+              } else {
+                throw new Error(`Expected string literal name, received ${nameAttrValue.type}`);
+              }
+            }
+            const ofAttrValue = getAttrValue(child.openingElement, 'of');
+            if (ofAttrValue) {
+              if (t.isJSXExpressionContainer(ofAttrValue)) {
+                const of = ofAttrValue.expression;
                 if (t.isIdentifier(of)) {
                   const importName = varToImport[of.name];
                   if (importName) {
@@ -54,7 +71,25 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
                   throw new Error(`Expected identifier, received ${of.type}`);
                 }
               } else {
-                throw new Error(`Expected JSX expression, received ${ofAttr.type}`);
+                throw new Error(`Expected JSX expression, received ${ofAttrValue.type}`);
+              }
+            }
+            const isTemplateAttr = getAttr(child.openingElement, 'isTemplate');
+            if (isTemplateAttr) {
+              if (!isTemplateAttr.value) {
+                // no value, implicit true
+                result.isTemplate = true;
+              } else if (t.isJSXExpressionContainer(isTemplateAttr.value)) {
+                const isTemplate = isTemplateAttr.value.expression;
+                if (t.isBooleanLiteral(isTemplate)) {
+                  result.isTemplate = isTemplate.value;
+                } else {
+                  throw new Error(`Expected boolean isTemplate, received ${isTemplate.type}`);
+                }
+              } else {
+                throw new Error(
+                  `Expected JSX expression isTemplate, received ${isTemplateAttr.value.type}`
+                );
               }
             }
           }
@@ -128,19 +163,29 @@ export const plugin = (store: any) => (root: any) => {
   // we're not using it again
   // const clone = cloneDeep(estree);
   const babel = toBabel(estree);
-  const { title, of } = extractTitle(babel, varToImport);
+
+  const { title, of, name, isTemplate } = extractTitle(babel, varToImport);
   store.title = title;
   store.of = of;
+  store.name = name;
+  store.isTemplate = isTemplate;
   store.imports = Array.from(new Set(Object.values(varToImport)));
 
   return root;
 };
 
 export const analyze = (code: string) => {
-  const store = { title: undefined, of: undefined, imports: undefined, toEstree } as any;
+  const store = {
+    title: undefined,
+    of: undefined,
+    name: undefined,
+    isTemplate: false,
+    imports: undefined,
+    toEstree,
+  } as any;
   compileSync(code, {
     rehypePlugins: [[plugin, store]],
   });
-  const { title, of, imports = [] } = store;
-  return { title, of, imports };
+  const { title, of, name, isTemplate, imports = [] } = store;
+  return { title, of, name, isTemplate, imports };
 };
