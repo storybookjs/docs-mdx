@@ -3,6 +3,7 @@ import toBabel from 'estree-to-babel';
 import * as babelTraverse from '@babel/traverse';
 import { compileSync } from '@mdx-js/mdx';
 import { toEstree } from 'hast-util-to-estree';
+import cloneDeep from 'lodash/cloneDeep';
 
 const getAttr = (elt: t.JSXOpeningElement, what: string): t.JSXAttribute | undefined => {
   const attr = (elt.attributes as t.JSXAttribute[]).find((n) => n.name.name === what);
@@ -159,10 +160,8 @@ export const plugin = (store: any) => (root: any) => {
   }
 
   const estree = store.toEstree(root);
-  // toBabel mutates root, bug we don't need to clone it because
-  // we're not using it again
-  // const clone = cloneDeep(estree);
-  const babel = toBabel(estree);
+  const clone = cloneDeep(estree);
+  const babel = toBabel(clone);
 
   const { title, of, name, isTemplate } = extractTitle(babel, varToImport);
   store.title = title;

@@ -139,7 +139,7 @@ Object {
     // For some reason these two tests throw with:
     //   "TypeError: this[node.value.type] is not a function"
     // It's not clear why?
-    it.skip('boolean expression, true', () => {
+    it('boolean expression, true', () => {
       const input = dedent`
         <Meta isTemplate={true} />
       `;
@@ -154,7 +154,7 @@ Object {
 `);
     });
 
-    it.skip('boolean expression, false', () => {
+    it('boolean expression, false', () => {
       const input = dedent`
         <Meta isTemplate={false} />
       `;
