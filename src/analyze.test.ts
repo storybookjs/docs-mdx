@@ -30,14 +30,12 @@ describe('analyze', () => {
         <Meta title="foobar" />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [],
-  "isTemplate": false,
-  "name": undefined,
-  "of": undefined,
-  "title": "foobar",
-}
-`);
+        Object {
+          "imports": Array [],
+          "of": undefined,
+          "title": "foobar",
+        }
+      `);
     });
 
     it('template literal title', () => {
@@ -205,10 +203,10 @@ Object {
     });
     it('Bad MDX formatting', () => {
       const input = dedent`
-      import * as ButtonStories from './Button.stories';
+        import meta, { Basic } from './Button.stories';
 
-      <Meta of={ButtonStories} />/>
-    `;
+        <Meta of={meta} />/>
+      `;
       expect(analyze(input)).toMatchInlineSnapshot(`
 Object {
   "imports": Array [
@@ -244,6 +242,24 @@ Object {
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
         `"Meta can only be declared once"`
       );
+    });
+    it('MDX comments', () => {
+      const input = dedent`
+        import meta, { Basic } from './Button.stories';
+
+        <Meta of={meta} />
+
+        {/* whatever */}
+      `;
+      expect(analyze(input)).toMatchInlineSnapshot(`
+        Object {
+          "imports": Array [
+            "./Button.stories",
+          ],
+          "of": "./Button.stories",
+          "title": undefined,
+        }
+      `);
     });
   });
 });
