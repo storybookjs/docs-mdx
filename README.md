@@ -4,6 +4,14 @@ Storybook MDX docs is a small library that analyzes the contents of a `.docs.mdx
 
 This is an internal library, used to help generate the Storybook's `index.json`, the static index of all the contents of your storybook.
 
+It currently produces:
+
+| name    | example                            | description                             |
+| ------- | ---------------------------------- | --------------------------------------- |
+| title   | `<Meta title="x">`                 | A manually specified title              |
+| of      | `<Meta of={buttonMeta}>`           | A title specified by an imported object |
+| imports | `import * from './Button.stories'` | The list of ESM imports                 |
+
 ## Getting Started
 
 FIXME: Add getting started steps
