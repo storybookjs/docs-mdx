@@ -38,7 +38,8 @@
     "@babel/traverse": "^7.12.11",
     "@mdx-js/mdx": "^2.0.0",
     "estree-to-babel": "^4.9.0",
-    "hast-util-to-estree": "^2.0.2"
+    "hast-util-to-estree": "^2.0.2",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@babel/cli": "^7.12.1",
@@ -49,6 +50,7 @@
     "@babel/types": "^7.14.8",
     "@jest/types": "^27.0.6",
     "@types/jest": "^27.0.3",
+    "@types/lodash": "^4.14.182",
     "@types/node": "^16.4.1",
     "auto": "^10.3.0",
     "babel-jest": "^27.0.6",

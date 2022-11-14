@@ -11,13 +11,12 @@ export const babelParse = (code: string) =>
 describe('extractImports', () => {
   const ast = babelParse(dedent`
     import { Meta } from '@storybook/blocks';
-    import meta, { Basic } from './Button.stories';
+    import * as ButtonStories from './Button.stories';
   `);
   expect(extractImports(ast)).toMatchInlineSnapshot(`
     Object {
-      "Basic": "./Button.stories",
+      "ButtonStories": "./Button.stories",
       "Meta": "@storybook/blocks",
-      "meta": "./Button.stories",
     }
   `);
 });
@@ -31,13 +30,16 @@ describe('analyze', () => {
         <Meta title="foobar" />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [],
-          "of": undefined,
-          "title": "foobar",
-        }
-      `);
+Object {
+  "imports": Array [],
+  "isTemplate": false,
+  "name": undefined,
+  "of": undefined,
+  "title": "foobar",
+}
+`);
     });
+
     it('template literal title', () => {
       const input = dedent`
         # hello
@@ -48,35 +50,57 @@ describe('analyze', () => {
         `"Expected string literal title, received JSXExpressionContainer"`
       );
     });
-    it('duplicate titles', () => {
+  });
+
+  describe('name', () => {
+    it('string literal name', () => {
       const input = dedent`
-        <Meta title="foobar" />
+        # hello
   
-        <Meta title="bz" />
+        <Meta name="foobar" />
+      `;
+      expect(analyze(input)).toMatchInlineSnapshot(`
+Object {
+  "imports": Array [],
+  "isTemplate": false,
+  "name": "foobar",
+  "of": undefined,
+  "title": undefined,
+}
+`);
+    });
+    it('template literal name', () => {
+      const input = dedent`
+        # hello
+  
+        <Meta name={\`foobar\`} />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `"Meta can only be declared once"`
+        `"Expected string literal name, received JSXExpressionContainer"`
       );
     });
   });
+
   describe('of', () => {
     it('basic', () => {
       const input = dedent`
         import { Meta } from '@storybook/blocks';
-        import meta, { Basic } from './Button.stories';
+        import * as ButtonStories from './Button.stories';
 
-        <Meta of={meta} />
+        <Meta of={ButtonStories} />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [
-            "@storybook/blocks",
-            "./Button.stories",
-          ],
-          "of": "./Button.stories",
-          "title": undefined,
-        }
-      `);
+Object {
+  "imports": Array [
+    "@storybook/blocks",
+    "./Button.stories",
+  ],
+  "isTemplate": false,
+  "name": undefined,
+  "of": "./Button.stories",
+  "title": undefined,
+}
+`);
     });
     it('missing variable', () => {
       const input = dedent`
@@ -86,7 +110,7 @@ describe('analyze', () => {
     });
     it('string literal', () => {
       const input = dedent`
-        import meta, { Basic } from './Button.stories';
+        import * as ButtonStories from './Button.stories';
   
         <Meta of="foobar" />
       `;
@@ -95,18 +119,89 @@ describe('analyze', () => {
       );
     });
   });
+
+  describe('isTemplate', () => {
+    it('boolean implicit', () => {
+      const input = dedent`
+        <Meta isTemplate />
+      `;
+      expect(analyze(input)).toMatchInlineSnapshot(`
+Object {
+  "imports": Array [],
+  "isTemplate": true,
+  "name": undefined,
+  "of": undefined,
+  "title": undefined,
+}
+`);
+    });
+
+    // For some reason these two tests throw with:
+    //   "TypeError: this[node.value.type] is not a function"
+    // It's not clear why?
+    it('boolean expression, true', () => {
+      const input = dedent`
+        <Meta isTemplate={true} />
+      `;
+      expect(analyze(input)).toMatchInlineSnapshot(`
+Object {
+  "imports": Array [],
+  "isTemplate": true,
+  "name": undefined,
+  "of": undefined,
+  "title": undefined,
+}
+`);
+    });
+
+    it('boolean expression, false', () => {
+      const input = dedent`
+        <Meta isTemplate={false} />
+      `;
+      expect(analyze(input)).toMatchInlineSnapshot(`
+Object {
+  "imports": Array [],
+  "isTemplate": false,
+  "name": undefined,
+  "of": undefined,
+  "title": undefined,
+}
+`);
+    });
+
+    it('string literal', () => {
+      const input = dedent`
+        <Meta isTemplate="foo" />
+      `;
+      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
+        `"Expected JSX expression isTemplate, received StringLiteral"`
+      );
+    });
+
+    it('other expression', () => {
+      const input = dedent`
+        <Meta isTemplate={1} />
+      `;
+      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
+        `"Expected boolean isTemplate, received NumericLiteral"`
+      );
+    });
+  });
+
   describe('errors', () => {
     it('no title', () => {
       const input = dedent`
       # hello
     `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [],
-          "of": undefined,
-          "title": undefined,
-        }
-      `);
+Object {
+  "imports": Array [],
+  "isTemplate": false,
+  "name": undefined,
+  "of": undefined,
+  "title": undefined,
+}
+`);
     });
     it('Bad MDX formatting', () => {
       const input = dedent`
@@ -115,14 +210,40 @@ describe('analyze', () => {
         <Meta of={meta} />/>
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [
-            "./Button.stories",
-          ],
-          "of": undefined,
-          "title": undefined,
-        }
-      `);
+Object {
+  "imports": Array [
+    "./Button.stories",
+  ],
+  "isTemplate": false,
+  "name": undefined,
+  "of": undefined,
+  "title": undefined,
+}
+`);
+    });
+
+    it('duplicate meta, both title', () => {
+      const input = dedent`
+        <Meta title="foobar" />
+  
+        <Meta title="bz" />
+      `;
+      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
+        `"Meta can only be declared once"`
+      );
+    });
+
+    it('duplicate meta, different', () => {
+      const input = dedent`
+        import * as ButtonStories from './Button.stories';
+
+        <Meta title="foobar" />
+  
+        <Meta of={ButtonStories} />
+      `;
+      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
+        `"Meta can only be declared once"`
+      );
     });
     it('MDX comments', () => {
       const input = dedent`
@@ -133,14 +254,16 @@ describe('analyze', () => {
         {/* whatever */}
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [
-            "./Button.stories",
-          ],
-          "of": "./Button.stories",
-          "title": undefined,
-        }
-      `);
+Object {
+  "imports": Array [
+    "./Button.stories",
+  ],
+  "isTemplate": false,
+  "name": undefined,
+  "of": "./Button.stories",
+  "title": undefined,
+}
+`);
     });
   });
 });
