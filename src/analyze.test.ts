@@ -30,12 +30,14 @@ describe('analyze', () => {
         <Meta title="foobar" />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [],
-          "of": undefined,
-          "title": "foobar",
-        }
-      `);
+Object {
+  "imports": Array [],
+  "isTemplate": false,
+  "name": undefined,
+  "of": undefined,
+  "title": "foobar",
+}
+`);
     });
 
     it('template literal title', () => {
@@ -252,14 +254,16 @@ Object {
         {/* whatever */}
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [
-            "./Button.stories",
-          ],
-          "of": "./Button.stories",
-          "title": undefined,
-        }
-      `);
+Object {
+  "imports": Array [
+    "./Button.stories",
+  ],
+  "isTemplate": false,
+  "name": undefined,
+  "of": "./Button.stories",
+  "title": undefined,
+}
+`);
     });
   });
 });
