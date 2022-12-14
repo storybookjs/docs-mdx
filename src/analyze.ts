@@ -152,12 +152,12 @@ export const extractImports = (root: t.File) => {
 };
 
 export const plugin = (store: any) => (root: any) => {
-  const imports = root.children.find((child: any) => child.type === 'mdxjsEsm');
+  const esmBlocks: any[] = root.children.filter((child: any) => child.type === 'mdxjsEsm');
 
-  let varToImport = {};
-  if (imports) {
-    varToImport = extractImports(toBabel(imports.data.estree));
-  }
+  const varToImport = esmBlocks.reduce((acc, block) => {
+    const imports = extractImports(toBabel(block.data.estree));
+    return { ...acc, ...imports };
+  }, {} as Record<string, string>);
 
   const estree = store.toEstree(root);
   const clone = cloneDeep(estree);

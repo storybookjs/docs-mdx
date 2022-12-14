@@ -9,16 +9,32 @@ export const babelParse = (code: string) =>
   });
 
 describe('extractImports', () => {
-  const ast = babelParse(dedent`
-    import { Meta } from '@storybook/blocks';
-    import * as ButtonStories from './Button.stories';
-  `);
-  expect(extractImports(ast)).toMatchInlineSnapshot(`
-    Object {
-      "ButtonStories": "./Button.stories",
-      "Meta": "@storybook/blocks",
-    }
-  `);
+  it('single block', () => {
+    const ast = babelParse(dedent`
+      import { Meta } from '@storybook/blocks';
+      import * as ButtonStories from './Button.stories';
+    `);
+    expect(extractImports(ast)).toMatchInlineSnapshot(`
+      Object {
+        "ButtonStories": "./Button.stories",
+        "Meta": "@storybook/blocks",
+      }
+    `);
+  });
+
+  it('multiple blocks', () => {
+    const ast = babelParse(dedent`
+      import { Meta } from '@storybook/blocks';
+
+      import * as ButtonStories from './Button.stories';
+    `);
+    expect(extractImports(ast)).toMatchInlineSnapshot(`
+      Object {
+        "ButtonStories": "./Button.stories",
+        "Meta": "@storybook/blocks",
+      }
+    `);
+  });
 });
 
 describe('analyze', () => {
@@ -30,14 +46,14 @@ describe('analyze', () => {
         <Meta title="foobar" />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [],
-  "isTemplate": false,
-  "name": undefined,
-  "of": undefined,
-  "title": "foobar",
-}
-`);
+        Object {
+          "imports": Array [],
+          "isTemplate": false,
+          "name": undefined,
+          "of": undefined,
+          "title": "foobar",
+        }
+      `);
     });
 
     it('template literal title', () => {
@@ -90,17 +106,17 @@ Object {
         <Meta of={ButtonStories} />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [
-    "@storybook/blocks",
-    "./Button.stories",
-  ],
-  "isTemplate": false,
-  "name": undefined,
-  "of": "./Button.stories",
-  "title": undefined,
-}
-`);
+        Object {
+          "imports": Array [
+            "@storybook/blocks",
+            "./Button.stories",
+          ],
+          "isTemplate": false,
+          "name": undefined,
+          "of": "./Button.stories",
+          "title": undefined,
+        }
+      `);
     });
     it('missing variable', () => {
       const input = dedent`
@@ -118,6 +134,54 @@ Object {
         `"Expected JSX expression, received StringLiteral"`
       );
     });
+    it('multiple import blocks', () => {
+      const input = dedent`
+        import { Meta } from '@storybook/blocks';
+
+        import * as ButtonStories from './Button.stories';
+
+        <Meta of={ButtonStories} />
+      `;
+      expect(analyze(input)).toMatchInlineSnapshot(`
+        Object {
+          "imports": Array [
+            "@storybook/blocks",
+            "./Button.stories",
+          ],
+          "isTemplate": false,
+          "name": undefined,
+          "of": "./Button.stories",
+          "title": undefined,
+        }
+      `);
+    });
+  });
+
+  describe('of and name', () => {
+    it('gets the name correctly', () => {
+      const input = dedent`
+        import * as AStories from '../src/A.stories';
+
+        {/* This is the same name as a story */}
+
+        <Meta of={AStories} name="Story One" />
+
+        # Docs with of
+
+        hello docs
+      `;
+      expect(analyze(input)).toMatchInlineSnapshot(`
+        Object {
+          "imports": Array [
+            "../src/A.stories",
+          ],
+          "isTemplate": false,
+          "name": "Story One",
+          "of": "../src/A.stories",
+          "title": undefined,
+        }
+      `);
+    });
   });
 
   describe('isTemplate', () => {
@@ -126,14 +190,14 @@ Object {
         <Meta isTemplate />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [],
-  "isTemplate": true,
-  "name": undefined,
-  "of": undefined,
-  "title": undefined,
-}
-`);
+        Object {
+          "imports": Array [],
+          "isTemplate": true,
+          "name": undefined,
+          "of": undefined,
+          "title": undefined,
+        }
+      `);
     });
 
     // For some reason these two tests throw with:
@@ -144,14 +208,14 @@ Object {
         <Meta isTemplate={true} />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [],
-  "isTemplate": true,
-  "name": undefined,
-  "of": undefined,
-  "title": undefined,
-}
-`);
+        Object {
+          "imports": Array [],
+          "isTemplate": true,
+          "name": undefined,
+          "of": undefined,
+          "title": undefined,
+        }
+      `);
     });
 
     it('boolean expression, false', () => {
@@ -159,14 +223,14 @@ Object {
         <Meta isTemplate={false} />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [],
-  "isTemplate": false,
-  "name": undefined,
-  "of": undefined,
-  "title": undefined,
-}
-`);
+        Object {
+          "imports": Array [],
+          "isTemplate": false,
+          "name": undefined,
+          "of": undefined,
+          "title": undefined,
+        }
+      `);
     });
 
     it('string literal', () => {
@@ -194,14 +258,14 @@ Object {
       # hello
     `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [],
-  "isTemplate": false,
-  "name": undefined,
-  "of": undefined,
-  "title": undefined,
-}
-`);
+        Object {
+          "imports": Array [],
+          "isTemplate": false,
+          "name": undefined,
+          "of": undefined,
+          "title": undefined,
+        }
+      `);
     });
     it('Bad MDX formatting', () => {
       const input = dedent`
@@ -210,16 +274,16 @@ Object {
         <Meta of={meta} />/>
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [
-    "./Button.stories",
-  ],
-  "isTemplate": false,
-  "name": undefined,
-  "of": undefined,
-  "title": undefined,
-}
-`);
+        Object {
+          "imports": Array [
+            "./Button.stories",
+          ],
+          "isTemplate": false,
+          "name": undefined,
+          "of": undefined,
+          "title": undefined,
+        }
+      `);
     });
 
     it('duplicate meta, both title', () => {
@@ -254,16 +318,16 @@ Object {
         {/* whatever */}
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [
-    "./Button.stories",
-  ],
-  "isTemplate": false,
-  "name": undefined,
-  "of": "./Button.stories",
-  "title": undefined,
-}
-`);
+        Object {
+          "imports": Array [
+            "./Button.stories",
+          ],
+          "isTemplate": false,
+          "name": undefined,
+          "of": "./Button.stories",
+          "title": undefined,
+        }
+      `);
     });
   });
 });
