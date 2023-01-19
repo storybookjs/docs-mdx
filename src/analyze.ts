@@ -17,6 +17,18 @@ const getAttrValue = (
   return getAttr(elt, what)?.value;
 };
 
+const getJSXElements = (jsxParent: t.JSXFragment, elementName: string) => {
+  return jsxParent.children.filter((child) => {
+    if (t.isJSXElement(child)) {
+      if (t.isJSXIdentifier(child.openingElement.name)) {
+        const name = child.openingElement.name.name;
+        return name.toLowerCase() === elementName.toLowerCase();
+      }
+    }
+    return false;
+  }) as t.JSXElement[];
+};
+
 const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
   const result = { title: undefined, of: undefined, name: undefined, isTemplate: false } as {
     title: string | undefined;
@@ -33,74 +45,67 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
   });
   if (contents) {
     const jsx = contents.expression as t.JSXFragment;
-    jsx.children.forEach((child) => {
-      if (t.isJSXElement(child)) {
-        if (t.isJSXIdentifier(child.openingElement.name)) {
-          const name = child.openingElement.name.name;
-          if (name === 'Meta') {
-            if (result.title || result.name || result.of) {
-              throw new Error('Meta can only be declared once');
-            }
-            const titleAttrValue = getAttrValue(child.openingElement, 'title');
-            if (titleAttrValue) {
-              if (t.isStringLiteral(titleAttrValue)) {
-                result.title = titleAttrValue.value;
-              } else {
-                throw new Error(`Expected string literal title, received ${titleAttrValue.type}`);
-              }
-            }
-            const nameAttrValue = getAttrValue(child.openingElement, 'name');
-            if (nameAttrValue) {
-              if (t.isStringLiteral(nameAttrValue)) {
-                result.name = nameAttrValue.value;
-              } else {
-                throw new Error(`Expected string literal name, received ${nameAttrValue.type}`);
-              }
-            }
-            const ofAttrValue = getAttrValue(child.openingElement, 'of');
-            if (ofAttrValue) {
-              if (t.isJSXExpressionContainer(ofAttrValue)) {
-                const of = ofAttrValue.expression;
-                if (t.isIdentifier(of)) {
-                  const importName = varToImport[of.name];
-                  if (importName) {
-                    result.of = importName;
-                  } else {
-                    throw new Error(`Unknown identifier ${of.name}`);
-                  }
-                } else {
-                  throw new Error(`Expected identifier, received ${of.type}`);
-                }
-              } else {
-                throw new Error(`Expected JSX expression, received ${ofAttrValue.type}`);
-              }
-            }
-            const isTemplateAttr = getAttr(child.openingElement, 'isTemplate');
-            if (isTemplateAttr) {
-              if (!isTemplateAttr.value) {
-                // no value, implicit true
-                result.isTemplate = true;
-              } else if (t.isJSXExpressionContainer(isTemplateAttr.value)) {
-                const isTemplate = isTemplateAttr.value.expression;
-                if (t.isBooleanLiteral(isTemplate)) {
-                  result.isTemplate = isTemplate.value;
-                } else {
-                  throw new Error(`Expected boolean isTemplate, received ${isTemplate.type}`);
-                }
-              } else {
-                throw new Error(
-                  `Expected JSX expression isTemplate, received ${isTemplateAttr.value.type}`
-                );
-              }
-            }
+    const children = getJSXElements(jsx, 'Meta');
+
+    if (children.length) {
+      children.forEach((child) => {
+        if (result.title || result.name || result.of) {
+          throw new Error('Meta can only be declared once');
+        }
+        const titleAttrValue = getAttrValue(child.openingElement, 'title');
+        if (titleAttrValue) {
+          if (t.isStringLiteral(titleAttrValue)) {
+            result.title = titleAttrValue.value;
+          } else {
+            throw new Error(`Expected string literal title, received ${titleAttrValue.type}`);
           }
         }
-      } else if (t.isJSXExpressionContainer(child)) {
-        // Skip string literals & other JSX expressions
-      } else {
-        throw new Error(`Unexpected JSX child: ${child.type}`);
-      }
-    });
+        const nameAttrValue = getAttrValue(child.openingElement, 'name');
+        if (nameAttrValue) {
+          if (t.isStringLiteral(nameAttrValue)) {
+            result.name = nameAttrValue.value;
+          } else {
+            throw new Error(`Expected string literal name, received ${nameAttrValue.type}`);
+          }
+        }
+        const ofAttrValue = getAttrValue(child.openingElement, 'of');
+        if (ofAttrValue) {
+          if (t.isJSXExpressionContainer(ofAttrValue)) {
+            const of = ofAttrValue.expression;
+            if (t.isIdentifier(of)) {
+              const importName = varToImport[of.name];
+              if (importName) {
+                result.of = importName;
+              } else {
+                throw new Error(`Unknown identifier ${of.name}`);
+              }
+            } else {
+              throw new Error(`Expected identifier, received ${of.type}`);
+            }
+          } else {
+            throw new Error(`Expected JSX expression, received ${ofAttrValue.type}`);
+          }
+        }
+        const isTemplateAttr = getAttr(child.openingElement, 'isTemplate');
+        if (isTemplateAttr) {
+          if (!isTemplateAttr.value) {
+            // no value, implicit true
+            result.isTemplate = true;
+          } else if (t.isJSXExpressionContainer(isTemplateAttr.value)) {
+            const isTemplate = isTemplateAttr.value.expression;
+            if (t.isBooleanLiteral(isTemplate)) {
+              result.isTemplate = isTemplate.value;
+            } else {
+              throw new Error(`Expected boolean isTemplate, received ${isTemplate.type}`);
+            }
+          } else {
+            throw new Error(
+              `Expected JSX expression isTemplate, received ${isTemplateAttr.value.type}`
+            );
+          }
+        }
+      });
+    }
   }
 
   return result;
