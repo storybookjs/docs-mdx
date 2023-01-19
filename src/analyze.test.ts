@@ -330,4 +330,21 @@ Object {
       `);
     });
   });
+
+  describe('markdown/html', () => {
+    it('title', () => {
+      const input = dedent`
+      <title>foobar</title>
+    `;
+      expect(analyze(input)).toMatchInlineSnapshot(`
+      Object {
+        "imports": Array [],
+        "isTemplate": false,
+        "name": undefined,
+        "of": undefined,
+        "title": "foobar",
+      }
+    `);
+    })
+  })
 });

@@ -17,6 +17,18 @@ const getAttrValue = (
   return getAttr(elt, what)?.value;
 };
 
+const getJSXInnerText = (elt: t.JSXElement): string => {
+  return elt.children
+    .map((child) => {
+      if (t.isJSXExpressionContainer(child) && t.isStringLiteral(child.expression)) {
+        return child.expression.value;
+      } else if (t.isJSXElement(child)) {
+        return getJSXInnerText(child);
+      }
+    })
+    .join(' ');
+};
+
 const getJSXElements = (jsxParent: t.JSXFragment, elementName: string) => {
   return jsxParent.children.filter((child) => {
     if (t.isJSXElement(child)) {
@@ -105,6 +117,12 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
           }
         }
       });
+    } else {
+      const titleElement = getJSXElements(jsx, 'title')[0];
+      if (titleElement) {
+        const titleValue = getJSXInnerText(titleElement);
+        result.title = titleValue;
+      }
     }
   }
 
