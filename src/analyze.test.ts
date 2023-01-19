@@ -51,6 +51,7 @@ describe('analyze', () => {
           "isTemplate": false,
           "name": undefined,
           "of": undefined,
+          "tags": Array [],
           "title": "foobar",
         }
       `);
@@ -76,14 +77,15 @@ describe('analyze', () => {
         <Meta name="foobar" />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [],
-  "isTemplate": false,
-  "name": "foobar",
-  "of": undefined,
-  "title": undefined,
-}
-`);
+        Object {
+          "imports": Array [],
+          "isTemplate": false,
+          "name": "foobar",
+          "of": undefined,
+          "tags": Array [],
+          "title": undefined,
+        }
+      `);
     });
     it('template literal name', () => {
       const input = dedent`
@@ -114,6 +116,7 @@ Object {
           "isTemplate": false,
           "name": undefined,
           "of": "./Button.stories",
+          "tags": Array [],
           "title": undefined,
         }
       `);
@@ -151,6 +154,7 @@ Object {
           "isTemplate": false,
           "name": undefined,
           "of": "./Button.stories",
+          "tags": Array [],
           "title": undefined,
         }
       `);
@@ -178,6 +182,7 @@ Object {
           "isTemplate": false,
           "name": "Story One",
           "of": "../src/A.stories",
+          "tags": Array [],
           "title": undefined,
         }
       `);
@@ -195,6 +200,7 @@ Object {
           "isTemplate": true,
           "name": undefined,
           "of": undefined,
+          "tags": Array [],
           "title": undefined,
         }
       `);
@@ -213,6 +219,7 @@ Object {
           "isTemplate": true,
           "name": undefined,
           "of": undefined,
+          "tags": Array [],
           "title": undefined,
         }
       `);
@@ -228,6 +235,7 @@ Object {
           "isTemplate": false,
           "name": undefined,
           "of": undefined,
+          "tags": Array [],
           "title": undefined,
         }
       `);
@@ -252,6 +260,34 @@ Object {
     });
   });
 
+  describe('tags', () => {
+    it('template literal tags', () => {
+      const input = dedent`
+        <Meta tags={["docs"]} />
+      `;
+      expect(analyze(input)).toMatchInlineSnapshot(`
+        Object {
+          "imports": Array [],
+          "isTemplate": false,
+          "name": undefined,
+          "of": undefined,
+          "tags": Array [
+            "docs",
+          ],
+          "title": undefined,
+        }
+      `);
+    });
+    it('incorrect format', () => {
+      const input = dedent`
+        <Meta tags=["docs"] />
+      `;
+      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
+        '"Unexpected character `[` (U+005B) before attribute value, expected a character that can start an attribute value, such as `\\"`, `\'`, or `{`"'
+      );
+    });
+  })
+
   describe('errors', () => {
     it('no title', () => {
       const input = dedent`
@@ -263,6 +299,7 @@ Object {
           "isTemplate": false,
           "name": undefined,
           "of": undefined,
+          "tags": Array [],
           "title": undefined,
         }
       `);
@@ -281,6 +318,7 @@ Object {
           "isTemplate": false,
           "name": undefined,
           "of": undefined,
+          "tags": Array [],
           "title": undefined,
         }
       `);
@@ -325,6 +363,7 @@ Object {
           "isTemplate": false,
           "name": undefined,
           "of": "./Button.stories",
+          "tags": Array [],
           "title": undefined,
         }
       `);
@@ -342,6 +381,7 @@ Object {
         "isTemplate": false,
         "name": undefined,
         "of": undefined,
+        "tags": Array [],
         "title": "foobar",
       }
     `);

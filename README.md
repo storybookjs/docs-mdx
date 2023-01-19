@@ -12,7 +12,8 @@ It currently produces:
 | of      | `<Meta of={buttonMeta}>`           | A title specified by an imported object, e.g. coming from a `.stories.ts` file |
 | title   | `<Meta title="x">`                 | A manually specified title; this title is used for indexing the stories and displaying them in the Storybook sidebar              |
 | name   | `<Meta name="x">`                   | A manually defined Docs name; this value overrides `docs.defaultName` in `main.js`              |
-| isTemplate | `<Meta isTemplate={true} />` <br>OR<br> `<Meta isTemplate />` | `true` value indicates this file is not to be indexed by `Storybook` as it is being used as a template by other docs |
+| tags   | `<Meta tags={["docs"]} />`          | A list of tags that are used to influence the docs story. |
+| isTemplate | `<Meta isTemplate={true} />` <br/>OR<br/> `<Meta isTemplate />` | `true` value indicates this file is not to be indexed by `Storybook` as it is being used as a template by other docs |
 
 * Note: In case of importing documents other than `.mdx` files like `.md` or `.html` files, `<title></title>` will populate the `title` property with the innerText of the element.
 
@@ -41,6 +42,7 @@ const result: {
     name?: StoryName;
     isTemplate?: boolean;
     imports?: Path[];
+    tags?: Tag[];
 } = analyze(content);
 ```
 

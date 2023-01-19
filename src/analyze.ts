@@ -42,11 +42,12 @@ const getJSXElements = (jsxParent: t.JSXFragment, elementName: string) => {
 };
 
 const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
-  const result = { title: undefined, of: undefined, name: undefined, isTemplate: false } as {
+  const result = { title: undefined, of: undefined, name: undefined, isTemplate: false, tags: [] } as {
     title: string | undefined;
     of: string | undefined;
     name: string | undefined;
     isTemplate: boolean;
+    tags: string[];
   };
   let contents: t.ExpressionStatement;
   root.program.body.forEach((child) => {
@@ -114,6 +115,19 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
             throw new Error(
               `Expected JSX expression isTemplate, received ${isTemplateAttr.value.type}`
             );
+          }
+        }
+        const tagsAttr = getAttr(child.openingElement, 'tags');
+        if (tagsAttr) {
+          if (t.isJSXExpressionContainer(tagsAttr.value)) {
+            const tags = tagsAttr.value.expression;
+            if (t.isArrayExpression(tags)) {
+              result.tags = tags.elements.map(el => {
+                if (t.isStringLiteral(el)) {
+                  return el.value;
+                }
+              }).filter(Boolean);
+            }
           }
         }
       });
@@ -186,11 +200,12 @@ export const plugin = (store: any) => (root: any) => {
   const clone = cloneDeep(estree);
   const babel = toBabel(clone);
 
-  const { title, of, name, isTemplate } = extractTitle(babel, varToImport);
+  const { title, of, name, isTemplate, tags } = extractTitle(babel, varToImport);
   store.title = title;
   store.of = of;
   store.name = name;
   store.isTemplate = isTemplate;
+  store.tags = tags;
   store.imports = Array.from(new Set(Object.values(varToImport)));
 
   return root;
@@ -203,11 +218,12 @@ export const analyze = (code: string) => {
     name: undefined,
     isTemplate: false,
     imports: undefined,
+    tags: undefined,
     toEstree,
   } as any;
   compileSync(code, {
     rehypePlugins: [[plugin, store]],
   });
-  const { title, of, name, isTemplate, imports = [] } = store;
-  return { title, of, name, isTemplate, imports };
+  const { title, of, name, isTemplate, imports = [], tags = [] } = store;
+  return { title, of, name, isTemplate, imports, tags };
 };
