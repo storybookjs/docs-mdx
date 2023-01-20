@@ -42,7 +42,7 @@ describe('analyze', () => {
     it('string literal title', () => {
       const input = dedent`
         # hello
-  
+
         <Meta title="foobar" />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
@@ -60,7 +60,7 @@ describe('analyze', () => {
     it('template literal title', () => {
       const input = dedent`
         # hello
-  
+
         <Meta title={\`foobar\`} />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
@@ -73,7 +73,7 @@ describe('analyze', () => {
     it('string literal name', () => {
       const input = dedent`
         # hello
-  
+
         <Meta name="foobar" />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
@@ -90,7 +90,7 @@ describe('analyze', () => {
     it('template literal name', () => {
       const input = dedent`
         # hello
-  
+
         <Meta name={\`foobar\`} />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
@@ -130,7 +130,7 @@ describe('analyze', () => {
     it('string literal', () => {
       const input = dedent`
         import * as ButtonStories from './Button.stories';
-  
+
         <Meta of="foobar" />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
@@ -186,6 +186,17 @@ describe('analyze', () => {
           "title": undefined,
         }
       `);
+    });
+  });
+
+  describe('exported named declarations', () => {
+    it('should not throw when exporting named declarations', () => {
+      const input = dedent`
+        <Meta name="foobar" />
+        export const status = "ready";
+        export const values = [{ name: 'label' }]
+      `;
+      expect(() => analyze(input)).not.toThrow();
     });
   });
 
@@ -327,7 +338,7 @@ describe('analyze', () => {
     it('duplicate meta, both title', () => {
       const input = dedent`
         <Meta title="foobar" />
-  
+
         <Meta title="bz" />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
@@ -340,7 +351,7 @@ describe('analyze', () => {
         import * as ButtonStories from './Button.stories';
 
         <Meta title="foobar" />
-  
+
         <Meta of={ButtonStories} />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
