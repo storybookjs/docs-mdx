@@ -272,7 +272,7 @@ describe('analyze', () => {
   });
 
   describe('tags', () => {
-    it('template literal tags', () => {
+    it('string literal tags', () => {
       const input = dedent`
         <Meta tags={["docs"]} />
       `;
