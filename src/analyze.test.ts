@@ -289,6 +289,14 @@ describe('analyze', () => {
         }
       `);
     });
+    it('template literal tags', () => {
+      const input = dedent`
+        <Meta tags={[\`docs\`]} />
+      `;
+      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
+        '"Expected string literal title, received TemplateLiteral"'
+      );
+    });
     it('invalid mdx', () => {
       const input = dedent`
         <Meta tags=["docs"] />
@@ -297,7 +305,7 @@ describe('analyze', () => {
         '"Unexpected character `[` (U+005B) before attribute value, expected a character that can start an attribute value, such as `\\"`, `\'`, or `{`"'
       );
     });
-  })
+  });
 
   describe('errors', () => {
     it('no title', () => {
@@ -380,22 +388,4 @@ describe('analyze', () => {
       `);
     });
   });
-
-  describe('markdown/html', () => {
-    it('title', () => {
-      const input = dedent`
-      <title>foobar</title>
-    `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
-      Object {
-        "imports": Array [],
-        "isTemplate": false,
-        "name": undefined,
-        "of": undefined,
-        "tags": Array [],
-        "title": "foobar",
-      }
-    `);
-    })
-  })
 });

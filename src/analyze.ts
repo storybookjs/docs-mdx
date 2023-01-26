@@ -17,20 +17,8 @@ const getAttrValue = (
   return getAttr(elt, what)?.value;
 };
 
-const getJSXInnerText = (elt: t.JSXElement): string => {
-  return elt.children
-    .map((child) => {
-      if (t.isJSXExpressionContainer(child) && t.isStringLiteral(child.expression)) {
-        return child.expression.value;
-      } else if (t.isJSXElement(child)) {
-        return getJSXInnerText(child);
-      }
-    })
-    .join(' ');
-};
-
 const getJSXElements = (jsxParent: t.JSXFragment, elementName: string) => {
-  return jsxParent.children.filter((child) => {
+  return jsxParent.children.filter((child: t.JSXElement) => {
     if (t.isJSXElement(child)) {
       if (t.isJSXIdentifier(child.openingElement.name)) {
         const name = child.openingElement.name.name;
@@ -42,7 +30,13 @@ const getJSXElements = (jsxParent: t.JSXFragment, elementName: string) => {
 };
 
 const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
-  const result = { title: undefined, of: undefined, name: undefined, isTemplate: false, tags: [] } as {
+  const result = {
+    title: undefined,
+    of: undefined,
+    name: undefined,
+    isTemplate: false,
+    tags: [],
+  } as {
     title: string | undefined;
     of: string | undefined;
     name: string | undefined;
@@ -50,7 +44,7 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
     tags: string[];
   };
   let contents: t.ExpressionStatement;
-  root.program.body.forEach((child) => {
+  root.program.body.forEach((child: t.JSXElement) => {
     if (t.isExpressionStatement(child) && t.isJSXFragment(child.expression)) {
       if (contents) throw new Error('duplicate contents');
       contents = child;
@@ -122,21 +116,19 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
           if (t.isJSXExpressionContainer(tagsAttr.value)) {
             const tags = tagsAttr.value.expression;
             if (t.isArrayExpression(tags)) {
-              result.tags = tags.elements.map(el => {
-                if (t.isStringLiteral(el)) {
-                  return el.value;
-                }
-              }).filter(Boolean);
+              result.tags = tags.elements
+                .map((el: any) => {
+                  if (t.isStringLiteral(el)) {
+                    return el.value;
+                  } else {
+                    throw new Error(`Expected string literal title, received ${el.type}`);
+                  }
+                })
+                .filter(Boolean);
             }
           }
         }
       });
-    } else {
-      const titleElement = getJSXElements(jsx, 'title')[0];
-      if (titleElement) {
-        const titleValue = getJSXInnerText(titleElement);
-        result.title = titleValue;
-      }
     }
   }
 
@@ -173,10 +165,10 @@ export const extractImports = (root: t.File) => {
   const varToImport = {} as Record<string, string>;
   getTraverse(babelTraverse)(root, {
     ImportDeclaration: {
-      enter({ node }) {
+      enter({ node }: { node: t.ImportDeclaration }) {
         const { source, specifiers } = node;
         if (t.isStringLiteral(source)) {
-          specifiers.forEach((s) => {
+          specifiers.forEach((s: t.ImportDeclaration) => {
             varToImport[s.local.name] = source.value;
           });
         } else {
