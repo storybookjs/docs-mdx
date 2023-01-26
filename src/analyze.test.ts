@@ -289,7 +289,7 @@ describe('analyze', () => {
         }
       `);
     });
-    it('incorrect format', () => {
+    it('invalid mdx', () => {
       const input = dedent`
         <Meta tags=["docs"] />
       `;
