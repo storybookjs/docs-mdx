@@ -1,5 +1,6 @@
+import { describe, it, expect } from 'vitest';
 import { dedent } from 'ts-dedent';
-import { analyze, extractImports } from './analyze';
+import { extractImports, analyze } from './analyze';
 
 import { parse } from '@babel/parser';
 
@@ -15,7 +16,7 @@ describe('extractImports', () => {
       import * as ButtonStories from './Button.stories';
     `);
     expect(extractImports(ast)).toMatchInlineSnapshot(`
-      Object {
+      {
         "ButtonStories": "./Button.stories",
         "Meta": "@storybook/blocks",
       }
@@ -29,7 +30,7 @@ describe('extractImports', () => {
       import * as ButtonStories from './Button.stories';
     `);
     expect(extractImports(ast)).toMatchInlineSnapshot(`
-      Object {
+      {
         "ButtonStories": "./Button.stories",
         "Meta": "@storybook/blocks",
       }
@@ -46,8 +47,8 @@ describe('analyze', () => {
         <Meta title="foobar" />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [],
+        {
+          "imports": [],
           "isTemplate": false,
           "name": undefined,
           "of": undefined,
@@ -63,7 +64,7 @@ describe('analyze', () => {
         <Meta title={\`foobar\`} />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `"Expected string literal title, received JSXExpressionContainer"`
+        `[Error: Expected string literal title, received JSXExpressionContainer]`
       );
     });
   });
@@ -76,14 +77,14 @@ describe('analyze', () => {
         <Meta name="foobar" />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-Object {
-  "imports": Array [],
-  "isTemplate": false,
-  "name": "foobar",
-  "of": undefined,
-  "title": undefined,
-}
-`);
+        {
+          "imports": [],
+          "isTemplate": false,
+          "name": "foobar",
+          "of": undefined,
+          "title": undefined,
+        }
+      `);
     });
     it('template literal name', () => {
       const input = dedent`
@@ -92,7 +93,7 @@ Object {
         <Meta name={\`foobar\`} />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `"Expected string literal name, received JSXExpressionContainer"`
+        `[Error: Expected string literal name, received JSXExpressionContainer]`
       );
     });
   });
@@ -106,8 +107,8 @@ Object {
         <Meta of={ButtonStories} />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [
+        {
+          "imports": [
             "@storybook/blocks",
             "./Button.stories",
           ],
@@ -122,7 +123,9 @@ Object {
       const input = dedent`
         <Meta of={meta} />
       `;
-      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(`"Unknown identifier meta"`);
+      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
+        `[Error: Unknown identifier meta]`
+      );
     });
     it('string literal', () => {
       const input = dedent`
@@ -131,7 +134,7 @@ Object {
         <Meta of="foobar" />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `"Expected JSX expression, received StringLiteral"`
+        `[Error: Expected JSX expression, received StringLiteral]`
       );
     });
     it('multiple import blocks', () => {
@@ -143,8 +146,8 @@ Object {
         <Meta of={ButtonStories} />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [
+        {
+          "imports": [
             "@storybook/blocks",
             "./Button.stories",
           ],
@@ -171,8 +174,8 @@ Object {
         hello docs
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [
+        {
+          "imports": [
             "../src/A.stories",
           ],
           "isTemplate": false,
@@ -201,8 +204,8 @@ Object {
         <Meta isTemplate />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [],
+        {
+          "imports": [],
           "isTemplate": true,
           "name": undefined,
           "of": undefined,
@@ -219,8 +222,8 @@ Object {
         <Meta isTemplate={true} />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [],
+        {
+          "imports": [],
           "isTemplate": true,
           "name": undefined,
           "of": undefined,
@@ -234,8 +237,8 @@ Object {
         <Meta isTemplate={false} />
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [],
+        {
+          "imports": [],
           "isTemplate": false,
           "name": undefined,
           "of": undefined,
@@ -249,7 +252,7 @@ Object {
         <Meta isTemplate="foo" />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `"Expected JSX expression isTemplate, received StringLiteral"`
+        `[Error: Expected JSX expression isTemplate, received StringLiteral]`
       );
     });
 
@@ -258,7 +261,7 @@ Object {
         <Meta isTemplate={1} />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `"Expected boolean isTemplate, received NumericLiteral"`
+        `[Error: Expected boolean isTemplate, received NumericLiteral]`
       );
     });
   });
@@ -269,8 +272,8 @@ Object {
       # hello
     `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [],
+        {
+          "imports": [],
           "isTemplate": false,
           "name": undefined,
           "of": undefined,
@@ -285,8 +288,8 @@ Object {
         <Meta of={meta} />/>
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [
+        {
+          "imports": [
             "./Button.stories",
           ],
           "isTemplate": false,
@@ -304,7 +307,7 @@ Object {
         <Meta title="bz" />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `"Meta can only be declared once"`
+        `[Error: Meta can only be declared once]`
       );
     });
 
@@ -317,7 +320,7 @@ Object {
         <Meta of={ButtonStories} />
       `;
       expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `"Meta can only be declared once"`
+        `[Error: Meta can only be declared once]`
       );
     });
     it('MDX comments', () => {
@@ -329,8 +332,8 @@ Object {
         {/* whatever */}
       `;
       expect(analyze(input)).toMatchInlineSnapshot(`
-        Object {
-          "imports": Array [
+        {
+          "imports": [
             "./Button.stories",
           ],
           "isTemplate": false,
