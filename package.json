@@ -41,6 +41,7 @@
     "@babel/traverse": "^7.12.11",
     "@babel/types": "^7.14.8",
     "@mdx-js/mdx": "^3.0.0",
+    "@types/babel__traverse": "^7.12.11",
     "@types/lodash": "^4.14.182",
     "@types/node": "^16.4.1",
     "auto": "^10.3.0",
