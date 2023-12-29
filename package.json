@@ -32,29 +32,27 @@
   "lint-staged": {
     "*.{ts,js,css,md}": "prettier --write"
   },
-  "devDependencies": {
-    "@babel/cli": "^7.12.1",
+  "dependencies": {
     "@babel/core": "^7.12.3",
     "@babel/parser": "^7.12.11",
     "@babel/preset-env": "^7.12.1",
     "@babel/preset-typescript": "^7.13.0",
     "@babel/traverse": "^7.12.11",
     "@babel/types": "^7.14.8",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
     "@mdx-js/mdx": "^3.0.0",
     "@types/babel__traverse": "^7.12.11",
     "@types/lodash": "^4.14.182",
     "@types/node": "^16.4.1",
     "auto": "^10.3.0",
-    "babel-loader": "^8.1.0",
-    "babel-plugin-add-import-extension": "^1.6.0",
     "concurrently": "^7.0.0",
     "estree-to-babel": "^4.9.0",
     "hast-util-to-estree": "^2.0.2",
     "husky": ">=6",
     "lint-staged": ">=10",
-    "lodash": "^4.17.21",
     "prettier": "^2.3.1",
-    "rimraf": "^3.0.2",
     "ts-dedent": "^2.2.0",
     "tsup": "^6.2.2",
     "typescript": "^4.2.4",
