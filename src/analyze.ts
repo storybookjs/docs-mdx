@@ -3,6 +3,8 @@ import toBabel from 'estree-to-babel';
 import * as babelTraverse from '@babel/traverse';
 import { compileSync } from '@mdx-js/mdx';
 import { toEstree } from 'hast-util-to-estree';
+import { selectAll } from 'hast-util-select';
+import { toString } from 'hast-util-to-string';
 import cloneDeep from 'lodash/cloneDeep';
 
 const getAttr = (elt: t.JSXOpeningElement, what: string): t.JSXAttribute | undefined => {
@@ -151,6 +153,17 @@ export const extractImports = (root: t.File) => {
   return varToImport;
 };
 
+export const getHeadings = (root: any) => {
+  const headings = [] as string[];
+  ['h1', 'h2', 'h3', 'h4'].forEach((tag) => {
+    selectAll(tag, root).forEach((node: any) => {
+      const heading = toString(node);
+      headings.push(heading);
+    });
+  });
+  return headings;
+};
+
 export const plugin = (store: any) => (root: any) => {
   const estree = store.toEstree(root);
   const clone = cloneDeep(estree);
@@ -162,6 +175,7 @@ export const plugin = (store: any) => (root: any) => {
   store.name = name;
   store.isTemplate = isTemplate;
   store.imports = Array.from(new Set(Object.values(varToImport)));
+  store.headings = getHeadings(root);
 
   return root;
 };
@@ -178,6 +192,6 @@ export const analyze = (code: string) => {
   compileSync(code, {
     rehypePlugins: [[plugin, store]],
   });
-  const { title, of, name, isTemplate, imports = [] } = store;
-  return { title, of, name, isTemplate, imports };
+  const { title, of, name, isTemplate, imports = [], headings = [] } = store;
+  return { title, of, name, isTemplate, imports, headings };
 };
