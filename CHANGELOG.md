@@ -1,3 +1,18 @@
+# v3.1.0 (Mon Mar 25 2024)
+
+#### 🚀 Enhancement
+
+- Add tags extraction [#17](https://github.com/storybookjs/docs-mdx/pull/17) ([@shilman](https://github.com/shilman))
+
+#### 🐛 Bug Fix
+
+
+#### Authors: 1
+
+- Michael Shilman ([@shilman](https://github.com/shilman))
+
+---
+
 # v3.0.0 (Tue Jan 02 2024)
 
 #### 💥 Breaking Change
