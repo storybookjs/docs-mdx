@@ -23,6 +23,7 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
     of: string | undefined;
     name: string | undefined;
     isTemplate: boolean;
+    metaTags: string[] | undefined;
   };
   let contents: t.ExpressionStatement;
   root.program.body.forEach((child) => {
@@ -93,6 +94,26 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
                 );
               }
             }
+            const tagsAttr = getAttr(child.openingElement, 'tags');
+            if (tagsAttr) {
+              if (t.isJSXExpressionContainer(tagsAttr.value)) {
+                const tags = tagsAttr.value.expression;
+                if (t.isArrayExpression(tags)) {
+                  const metaTags = tags.elements.map((tag) => {
+                    if (t.isStringLiteral(tag)) {
+                      return tag.value;
+                    } else {
+                      throw new Error(`Expected string literal tag, received ${tag.type}`);
+                    }
+                  });
+                  result.metaTags = metaTags;
+                } else {
+                  throw new Error(`Expected array tags, received ${tags.type}`);
+                }
+              } else {
+                throw new Error(`Expected JSX expression tags, received ${tagsAttr.value.type}`);
+              }
+            }
           }
         }
       } else if (t.isJSXExpressionContainer(child)) {
@@ -156,11 +177,12 @@ export const plugin = (store: any) => (root: any) => {
   const clone = cloneDeep(estree);
   const babel = toBabel(clone);
   const varToImport = extractImports(babel);
-  const { title, of, name, isTemplate } = extractTitle(babel, varToImport);
+  const { title, of, name, isTemplate, metaTags } = extractTitle(babel, varToImport);
   store.title = title;
   store.of = of;
   store.name = name;
   store.isTemplate = isTemplate;
+  store.metaTags = metaTags;
   store.imports = Array.from(new Set(Object.values(varToImport)));
 
   return root;
@@ -172,12 +194,13 @@ export const analyze = (code: string) => {
     of: undefined,
     name: undefined,
     isTemplate: false,
+    metaTags: undefined,
     imports: undefined,
     toEstree,
   } as any;
   compileSync(code, {
     rehypePlugins: [[plugin, store]],
   });
-  const { title, of, name, isTemplate, imports = [] } = store;
-  return { title, of, name, isTemplate, imports };
+  const { title, of, name, isTemplate, metaTags, imports = [] } = store;
+  return { title, of, name, isTemplate, metaTags, imports };
 };

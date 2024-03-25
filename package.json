@@ -43,7 +43,7 @@
     "@types/babel__traverse": "^7.20.4",
     "@types/lodash": "^4.14.202",
     "@types/node": "^18.0.0",
-    "auto": "^11.0.4",
+    "auto": "^11.1.2",
     "concurrently": "^8.2.2",
     "estree-to-babel": "^9.0.0",
     "hast-util-to-estree": "^3.1.0",

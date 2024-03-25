@@ -50,6 +50,7 @@ describe('analyze', () => {
         {
           "imports": [],
           "isTemplate": false,
+          "metaTags": undefined,
           "name": undefined,
           "of": undefined,
           "title": "foobar",
@@ -80,6 +81,7 @@ describe('analyze', () => {
         {
           "imports": [],
           "isTemplate": false,
+          "metaTags": undefined,
           "name": "foobar",
           "of": undefined,
           "title": undefined,
@@ -113,6 +115,7 @@ describe('analyze', () => {
             "./Button.stories",
           ],
           "isTemplate": false,
+          "metaTags": undefined,
           "name": undefined,
           "of": "./Button.stories",
           "title": undefined,
@@ -152,6 +155,7 @@ describe('analyze', () => {
             "./Button.stories",
           ],
           "isTemplate": false,
+          "metaTags": undefined,
           "name": undefined,
           "of": "./Button.stories",
           "title": undefined,
@@ -179,6 +183,7 @@ describe('analyze', () => {
             "../src/A.stories",
           ],
           "isTemplate": false,
+          "metaTags": undefined,
           "name": "Story One",
           "of": "../src/A.stories",
           "title": undefined,
@@ -207,6 +212,7 @@ describe('analyze', () => {
         {
           "imports": [],
           "isTemplate": true,
+          "metaTags": undefined,
           "name": undefined,
           "of": undefined,
           "title": undefined,
@@ -225,6 +231,7 @@ describe('analyze', () => {
         {
           "imports": [],
           "isTemplate": true,
+          "metaTags": undefined,
           "name": undefined,
           "of": undefined,
           "title": undefined,
@@ -240,6 +247,7 @@ describe('analyze', () => {
         {
           "imports": [],
           "isTemplate": false,
+          "metaTags": undefined,
           "name": undefined,
           "of": undefined,
           "title": undefined,
@@ -275,6 +283,7 @@ describe('analyze', () => {
         {
           "imports": [],
           "isTemplate": false,
+          "metaTags": undefined,
           "name": undefined,
           "of": undefined,
           "title": undefined,
@@ -293,6 +302,7 @@ describe('analyze', () => {
             "./Button.stories",
           ],
           "isTemplate": false,
+          "metaTags": undefined,
           "name": undefined,
           "of": undefined,
           "title": undefined,
@@ -337,6 +347,32 @@ describe('analyze', () => {
             "./Button.stories",
           ],
           "isTemplate": false,
+          "metaTags": undefined,
+          "name": undefined,
+          "of": "./Button.stories",
+          "title": undefined,
+        }
+      `);
+    });
+    it('Meta tags', () => {
+      const input = dedent`
+        import meta, { Basic } from './Button.stories';
+
+        <Meta of={meta} tags={['a', 'b', 'c']} />
+
+        {/* whatever */}
+      `;
+      expect(analyze(input)).toMatchInlineSnapshot(`
+        {
+          "imports": [
+            "./Button.stories",
+          ],
+          "isTemplate": false,
+          "metaTags": [
+            "a",
+            "b",
+            "c",
+          ],
           "name": undefined,
           "of": "./Button.stories",
           "title": undefined,
