@@ -8,9 +8,13 @@
   },
   "license": "MIT",
   "author": "Michael Shilman <michael@lab80.co>",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "files": [
     "dist/**/*",
     "README.md",
