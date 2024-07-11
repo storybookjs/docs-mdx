@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { dedent } from 'ts-dedent';
-import { extractImports, analyze } from './analyze';
-
 import { parse } from 'meriyah';
 
-export const babelParse = (code: string) => parse(code, { module: true, jsx: true });
+import { extractImports, analyze } from './analyze';
+
+export const estreeParse = (code: string) => parse(code, { module: true, jsx: true });
 
 describe('extractImports', () => {
   it('single block', () => {
-    const ast = babelParse(dedent`
+    const ast = estreeParse(dedent`
       import { Meta } from '@storybook/blocks';
       import * as ButtonStories from './Button.stories';
     `);
@@ -21,7 +21,7 @@ describe('extractImports', () => {
   });
 
   it('multiple blocks', () => {
-    const ast = babelParse(dedent`
+    const ast = estreeParse(dedent`
       import { Meta } from '@storybook/blocks';
 
       import * as ButtonStories from './Button.stories';
