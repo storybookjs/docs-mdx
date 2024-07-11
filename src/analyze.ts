@@ -1,23 +1,100 @@
-import * as t from '@babel/types';
-import toBabel from 'estree-to-babel';
-import * as babelTraverse from '@babel/traverse';
-import { compileSync } from '@mdx-js/mdx';
 import { toEstree } from 'hast-util-to-estree';
-import cloneDeep from 'lodash/cloneDeep';
+import type { Program, ExpressionStatement } from 'hast-util-to-estree/lib';
+import type {
+  JSXFragment,
+  JSXAttribute,
+  JSXSimpleAttribute,
+  JSXElement,
+  JSXOpeningElement,
+} from 'estree-jsx';
 
-const getAttr = (elt: t.JSXOpeningElement, what: string): t.JSXAttribute | undefined => {
-  const attr = (elt.attributes as t.JSXAttribute[]).find((n) => n.name.name === what);
-  return attr;
-};
+const getAttr = (elt: JSXOpeningElement, what: string): JSXAttribute | undefined =>
+  elt.attributes.find((n) => n.type === 'JSXAttribute' && n.name.name === what);
 
 const getAttrValue = (
-  elt: t.JSXOpeningElement,
+  elt: JSXOpeningElement,
   what: string
-): t.JSXAttribute['value'] | undefined => {
-  return getAttr(elt, what)?.value;
+): JSXSimpleAttribute['value'] | undefined => {
+  const attr = getAttr(elt, what);
+  return (attr as any)?.value;
 };
 
-const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
+const getAttrLiteral = (elt: JSXOpeningElement, what: string): any | undefined => {
+  const attrValue = getAttrValue(elt, what);
+  if (!attrValue) return undefined;
+  if (attrValue.type === 'Literal') {
+    return (attrValue as any).value;
+  } else {
+    throw new Error(`Expected string literal ${what}, received ${attrValue.type}`);
+  }
+};
+
+const getOf = (elt: JSXOpeningElement, varToImport: Record<string, string>): string | undefined => {
+  const ofAttrValue = getAttrValue(elt, 'of');
+  if (ofAttrValue) {
+    if (ofAttrValue.type === 'JSXExpressionContainer') {
+      const of = (ofAttrValue as any).expression;
+      if (of?.type === 'Identifier') {
+        const importName = varToImport[of.name];
+        if (importName) {
+          return importName;
+        } else {
+          throw new Error(`Unknown identifier ${of.name}`);
+        }
+      } else {
+        throw new Error(`Expected identifier, received ${of.type}`);
+      }
+    } else {
+      throw new Error(`Expected JSX expression, received ${ofAttrValue.type}`);
+    }
+  }
+};
+
+const getTags = (elt: JSXOpeningElement): string[] | undefined => {
+  const tagsAttr = getAttr(elt, 'tags');
+  if (!tagsAttr) return undefined;
+  const tagsContainer = (tagsAttr as JSXSimpleAttribute).value;
+
+  if (tagsContainer.type === 'JSXExpressionContainer') {
+    const tagsArray = (tagsContainer as any).expression;
+    if (tagsArray.type === 'ArrayExpression') {
+      const metaTags = (tagsArray as any).elements.map((tag: any) => {
+        if (tag.type === 'Literal' && typeof tag.value === 'string') {
+          return tag.value;
+        } else {
+          throw new Error(`Expected string literal tag, received ${tag.type}`);
+        }
+      });
+      return metaTags;
+    } else {
+      throw new Error(`Expected tags array, received ${tagsArray.type}`);
+    }
+  } else {
+    throw new Error(`Expected JSX expression tags, received ${tagsContainer.type}`);
+  }
+};
+
+const getIsTemplate = (elt: JSXOpeningElement): boolean => {
+  const isTemplateAttr = getAttr(elt, 'isTemplate') as JSXSimpleAttribute | undefined;
+  if (!isTemplateAttr) return false;
+  console.log({ isTemplateAttr });
+  const isTemplate = (isTemplateAttr as any).value;
+  if (isTemplate == null) {
+    // no value, implicit true
+    return true;
+  } else if (isTemplate.type === 'JSXExpressionContainer') {
+    const expression = isTemplate.expression;
+    if (expression.type === 'Literal' && typeof expression.value === 'boolean') {
+      return expression.value;
+    } else {
+      throw new Error(`Expected boolean isTemplate, received ${typeof expression.value}`);
+    }
+  } else {
+    throw new Error(`Expected expression isTemplate, received ${isTemplate.type}`);
+  }
+};
+
+const extractTitle = (root: Program, varToImport: Record<string, string>) => {
   const result = { title: undefined, of: undefined, name: undefined, isTemplate: false } as {
     title: string | undefined;
     of: string | undefined;
@@ -25,159 +102,59 @@ const extractTitle = (root: t.File, varToImport: Record<string, string>) => {
     isTemplate: boolean;
     metaTags: string[] | undefined;
   };
-  let contents: t.ExpressionStatement;
-  root.program.body.forEach((child) => {
-    if (t.isExpressionStatement(child) && t.isJSXFragment(child.expression)) {
-      if (contents) throw new Error('duplicate contents');
-      contents = child;
+  let fragments = root.body.filter(
+    (child) =>
+      child.type === 'ExpressionStatement' && (child.expression as any).type === 'JSXFragment'
+  ) as ExpressionStatement[];
+  if (fragments.length > 1) throw new Error('duplicate contents');
+  if (fragments.length === 0) return result;
+
+  const fragment = fragments[0].expression as any as JSXFragment;
+  fragment.children.forEach((child) => {
+    if (child.type === 'JSXElement') {
+      const { openingElement } = child as JSXElement;
+      const name = openingElement.name.name;
+      if (name === 'Meta') {
+        if (result.title || result.name || result.of) {
+          throw new Error('Meta can only be declared once');
+        }
+        result.title = getAttrLiteral(openingElement, 'title');
+        result.name = getAttrLiteral(openingElement, 'name');
+        result.of = getOf(openingElement, varToImport);
+        result.isTemplate = getIsTemplate(openingElement);
+        result.metaTags = getTags(openingElement);
+      }
+    } else if (child.type === 'JSXExpressionContainer') {
+      // Skip string literals & other JSX expressions
+    } else {
+      throw new Error(`Unexpected JSX child: ${child.type}`);
     }
   });
-  if (contents) {
-    const jsx = contents.expression as t.JSXFragment;
-    jsx.children.forEach((child) => {
-      if (t.isJSXElement(child)) {
-        if (t.isJSXIdentifier(child.openingElement.name)) {
-          const name = child.openingElement.name.name;
-          if (name === 'Meta') {
-            if (result.title || result.name || result.of) {
-              throw new Error('Meta can only be declared once');
-            }
-            const titleAttrValue = getAttrValue(child.openingElement, 'title');
-            if (titleAttrValue) {
-              if (t.isStringLiteral(titleAttrValue)) {
-                result.title = titleAttrValue.value;
-              } else {
-                throw new Error(`Expected string literal title, received ${titleAttrValue.type}`);
-              }
-            }
-            const nameAttrValue = getAttrValue(child.openingElement, 'name');
-            if (nameAttrValue) {
-              if (t.isStringLiteral(nameAttrValue)) {
-                result.name = nameAttrValue.value;
-              } else {
-                throw new Error(`Expected string literal name, received ${nameAttrValue.type}`);
-              }
-            }
-            const ofAttrValue = getAttrValue(child.openingElement, 'of');
-            if (ofAttrValue) {
-              if (t.isJSXExpressionContainer(ofAttrValue)) {
-                const of = ofAttrValue.expression;
-                if (t.isIdentifier(of)) {
-                  const importName = varToImport[of.name];
-                  if (importName) {
-                    result.of = importName;
-                  } else {
-                    throw new Error(`Unknown identifier ${of.name}`);
-                  }
-                } else {
-                  throw new Error(`Expected identifier, received ${of.type}`);
-                }
-              } else {
-                throw new Error(`Expected JSX expression, received ${ofAttrValue.type}`);
-              }
-            }
-            const isTemplateAttr = getAttr(child.openingElement, 'isTemplate');
-            if (isTemplateAttr) {
-              if (!isTemplateAttr.value) {
-                // no value, implicit true
-                result.isTemplate = true;
-              } else if (t.isJSXExpressionContainer(isTemplateAttr.value)) {
-                const isTemplate = isTemplateAttr.value.expression;
-                if (t.isBooleanLiteral(isTemplate)) {
-                  result.isTemplate = isTemplate.value;
-                } else {
-                  throw new Error(`Expected boolean isTemplate, received ${isTemplate.type}`);
-                }
-              } else {
-                throw new Error(
-                  `Expected JSX expression isTemplate, received ${isTemplateAttr.value.type}`
-                );
-              }
-            }
-            const tagsAttr = getAttr(child.openingElement, 'tags');
-            if (tagsAttr) {
-              if (t.isJSXExpressionContainer(tagsAttr.value)) {
-                const tags = tagsAttr.value.expression;
-                if (t.isArrayExpression(tags)) {
-                  const metaTags = tags.elements.map((tag) => {
-                    if (t.isStringLiteral(tag)) {
-                      return tag.value;
-                    } else {
-                      throw new Error(`Expected string literal tag, received ${tag.type}`);
-                    }
-                  });
-                  result.metaTags = metaTags;
-                } else {
-                  throw new Error(`Expected array tags, received ${tags.type}`);
-                }
-              } else {
-                throw new Error(`Expected JSX expression tags, received ${tagsAttr.value.type}`);
-              }
-            }
-          }
-        }
-      } else if (t.isJSXExpressionContainer(child)) {
-        // Skip string literals & other JSX expressions
-      } else {
-        throw new Error(`Unexpected JSX child: ${child.type}`);
-      }
-    });
-  }
 
   return result;
 };
 
-/**
- * This is a hack to get around inconsistencies between
- * Babel's own weird interop code AND the typescript types (definitelyTyped)
- * and the fact that we're using `type: "module"` in this package
- * which has some weird behaviors
- */
-const getTraverse = (input: any): typeof babelTraverse.default => {
-  switch (true) {
-    case typeof input === 'function': {
-      return input;
-    }
-    case typeof input.traverse === 'function': {
-      return input.traverse;
-    }
-    case typeof input.default === 'function': {
-      return input.default;
-    }
-    case typeof input.default.default === 'function': {
-      return input.default.default;
-    }
-    default: {
-      throw new Error(`Unable to get traverse function from ${input}`);
-    }
-  }
-};
-
-export const extractImports = (root: t.File) => {
+export const extractImports = (root: Program) => {
   const varToImport = {} as Record<string, string>;
-  getTraverse(babelTraverse)(root, {
-    ImportDeclaration: {
-      enter({ node }) {
-        const { source, specifiers } = node;
-        if (t.isStringLiteral(source)) {
-          specifiers.forEach((s) => {
-            varToImport[s.local.name] = source.value;
-          });
-        } else {
-          throw new Error('MDX: unexpected import source');
-        }
-      },
-    },
+  root.body.forEach((child) => {
+    if (child.type === 'ImportDeclaration') {
+      const { source, specifiers } = child;
+      if (source.type === 'Literal') {
+        specifiers.forEach((s) => {
+          varToImport[s.local.name] = source.value.toString();
+        });
+      } else {
+        throw new Error('MDX: unexpected import source');
+      }
+    }
   });
   return varToImport;
 };
 
 export const plugin = (store: any) => (root: any) => {
-  const estree = store.toEstree(root);
-  const clone = cloneDeep(estree);
-  const babel = toBabel(clone);
-  const varToImport = extractImports(babel);
-  const { title, of, name, isTemplate, metaTags } = extractTitle(babel, varToImport);
+  const estree = toEstree(root);
+  const varToImport = extractImports(estree);
+  const { title, of, name, isTemplate, metaTags } = extractTitle(estree, varToImport);
   store.title = title;
   store.of = of;
   store.name = name;
@@ -188,7 +165,7 @@ export const plugin = (store: any) => (root: any) => {
   return root;
 };
 
-export const analyze = (code: string) => {
+export const analyze = async (code: string) => {
   const store = {
     title: undefined,
     of: undefined,
@@ -196,9 +173,9 @@ export const analyze = (code: string) => {
     isTemplate: false,
     metaTags: undefined,
     imports: undefined,
-    toEstree,
   } as any;
-  compileSync(code, {
+  const { compile } = await import('@mdx-js/mdx');
+  await compile(code, {
     rehypePlugins: [[plugin, store]],
   });
   const { title, of, name, isTemplate, metaTags, imports = [] } = store;

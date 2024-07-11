@@ -1,17 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { dedent } from 'ts-dedent';
+import { parse } from 'meriyah';
+
 import { extractImports, analyze } from './analyze';
 
-import { parse } from '@babel/parser';
-
-export const babelParse = (code: string) =>
-  parse(code, {
-    sourceType: 'module',
-  });
+export const estreeParse = (code: string) => parse(code, { module: true, jsx: true });
 
 describe('extractImports', () => {
   it('single block', () => {
-    const ast = babelParse(dedent`
+    const ast = estreeParse(dedent`
       import { Meta } from '@storybook/blocks';
       import * as ButtonStories from './Button.stories';
     `);
@@ -24,7 +21,7 @@ describe('extractImports', () => {
   });
 
   it('multiple blocks', () => {
-    const ast = babelParse(dedent`
+    const ast = estreeParse(dedent`
       import { Meta } from '@storybook/blocks';
 
       import * as ButtonStories from './Button.stories';
@@ -40,13 +37,13 @@ describe('extractImports', () => {
 
 describe('analyze', () => {
   describe('title', () => {
-    it('string literal title', () => {
+    it('string literal title', async () => {
       const input = dedent`
         # hello
 
         <Meta title="foobar" />
       `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
           "imports": [],
           "isTemplate": false,
@@ -57,27 +54,26 @@ describe('analyze', () => {
         }
       `);
     });
-
-    it('template literal title', () => {
+    it('template literal title', async () => {
       const input = dedent`
         # hello
 
         <Meta title={\`foobar\`} />
       `;
-      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
+      await expect(analyze(input)).rejects.toThrowErrorMatchingInlineSnapshot(
         `[Error: Expected string literal title, received JSXExpressionContainer]`
       );
     });
   });
 
   describe('name', () => {
-    it('string literal name', () => {
+    it('string literal name', async () => {
       const input = dedent`
         # hello
 
         <Meta name="foobar" />
       `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
           "imports": [],
           "isTemplate": false,
@@ -88,27 +84,27 @@ describe('analyze', () => {
         }
       `);
     });
-    it('template literal name', () => {
+    it('template literal name', async () => {
       const input = dedent`
         # hello
 
         <Meta name={\`foobar\`} />
       `;
-      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
+      await expect(() => analyze(input)).rejects.toThrowErrorMatchingInlineSnapshot(
         `[Error: Expected string literal name, received JSXExpressionContainer]`
       );
     });
   });
 
   describe('of', () => {
-    it('basic', () => {
+    it('basic', async () => {
       const input = dedent`
         import { Meta } from '@storybook/blocks';
         import * as ButtonStories from './Button.stories';
 
         <Meta of={ButtonStories} />
       `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
           "imports": [
             "@storybook/blocks",
@@ -122,25 +118,25 @@ describe('analyze', () => {
         }
       `);
     });
-    it('missing variable', () => {
+    it('missing variable', async () => {
       const input = dedent`
         <Meta of={meta} />
       `;
-      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
+      await expect(() => analyze(input)).rejects.toThrowErrorMatchingInlineSnapshot(
         `[Error: Unknown identifier meta]`
       );
     });
-    it('string literal', () => {
+    it('string literal', async () => {
       const input = dedent`
         import * as ButtonStories from './Button.stories';
 
         <Meta of="foobar" />
       `;
-      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `[Error: Expected JSX expression, received StringLiteral]`
+      await expect(() => analyze(input)).rejects.toThrowErrorMatchingInlineSnapshot(
+        `[Error: Expected JSX expression, received Literal]`
       );
     });
-    it('multiple import blocks', () => {
+    it('multiple import blocks', async () => {
       const input = dedent`
         import { Meta } from '@storybook/blocks';
 
@@ -148,7 +144,7 @@ describe('analyze', () => {
 
         <Meta of={ButtonStories} />
       `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
           "imports": [
             "@storybook/blocks",
@@ -165,7 +161,7 @@ describe('analyze', () => {
   });
 
   describe('of and name', () => {
-    it('gets the name correctly', () => {
+    it('gets the name correctly', async () => {
       const input = dedent`
         import * as AStories from '../src/A.stories';
 
@@ -177,7 +173,7 @@ describe('analyze', () => {
 
         hello docs
       `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
           "imports": [
             "../src/A.stories",
@@ -193,22 +189,22 @@ describe('analyze', () => {
   });
 
   describe('exported named declarations', () => {
-    it('should not throw when exporting named declarations', () => {
+    it('should not throw when exporting named declarations', async () => {
       const input = dedent`
         <Meta name="foobar" />
         export const status = "ready";
         export const values = [{ name: 'label' }]
       `;
-      expect(() => analyze(input)).not.toThrow();
+      await expect(analyze(input)).resolves.not.toThrow();
     });
   });
 
   describe('isTemplate', () => {
-    it('boolean implicit', () => {
+    it('boolean implicit', async () => {
       const input = dedent`
         <Meta isTemplate />
       `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
           "imports": [],
           "isTemplate": true,
@@ -219,15 +215,11 @@ describe('analyze', () => {
         }
       `);
     });
-
-    // For some reason these two tests throw with:
-    //   "TypeError: this[node.value.type] is not a function"
-    // It's not clear why?
-    it('boolean expression, true', () => {
+    it('boolean expression, true', async () => {
       const input = dedent`
         <Meta isTemplate={true} />
       `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
           "imports": [],
           "isTemplate": true,
@@ -238,12 +230,11 @@ describe('analyze', () => {
         }
       `);
     });
-
-    it('boolean expression, false', () => {
+    it('boolean expression, false', async () => {
       const input = dedent`
         <Meta isTemplate={false} />
       `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
+      expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
           "imports": [],
           "isTemplate": false,
@@ -254,107 +245,26 @@ describe('analyze', () => {
         }
       `);
     });
-
-    it('string literal', () => {
+    it('string literal', async () => {
       const input = dedent`
         <Meta isTemplate="foo" />
       `;
-      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `[Error: Expected JSX expression isTemplate, received StringLiteral]`
+      await expect(analyze(input)).rejects.toThrowErrorMatchingInlineSnapshot(
+        `[Error: Expected expression isTemplate, received Literal]`
       );
     });
-
-    it('other expression', () => {
+    it('other expression', async () => {
       const input = dedent`
         <Meta isTemplate={1} />
       `;
-      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `[Error: Expected boolean isTemplate, received NumericLiteral]`
+      await expect(analyze(input)).rejects.toThrowErrorMatchingInlineSnapshot(
+        `[Error: Expected boolean isTemplate, received number]`
       );
     });
   });
 
-  describe('errors', () => {
-    it('no title', () => {
-      const input = dedent`
-      # hello
-    `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
-        {
-          "imports": [],
-          "isTemplate": false,
-          "metaTags": undefined,
-          "name": undefined,
-          "of": undefined,
-          "title": undefined,
-        }
-      `);
-    });
-    it('Bad MDX formatting', () => {
-      const input = dedent`
-        import meta, { Basic } from './Button.stories';
-
-        <Meta of={meta} />/>
-      `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
-        {
-          "imports": [
-            "./Button.stories",
-          ],
-          "isTemplate": false,
-          "metaTags": undefined,
-          "name": undefined,
-          "of": undefined,
-          "title": undefined,
-        }
-      `);
-    });
-
-    it('duplicate meta, both title', () => {
-      const input = dedent`
-        <Meta title="foobar" />
-
-        <Meta title="bz" />
-      `;
-      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `[Error: Meta can only be declared once]`
-      );
-    });
-
-    it('duplicate meta, different', () => {
-      const input = dedent`
-        import * as ButtonStories from './Button.stories';
-
-        <Meta title="foobar" />
-
-        <Meta of={ButtonStories} />
-      `;
-      expect(() => analyze(input)).toThrowErrorMatchingInlineSnapshot(
-        `[Error: Meta can only be declared once]`
-      );
-    });
-    it('MDX comments', () => {
-      const input = dedent`
-        import meta, { Basic } from './Button.stories';
-
-        <Meta of={meta} />
-
-        {/* whatever */}
-      `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
-        {
-          "imports": [
-            "./Button.stories",
-          ],
-          "isTemplate": false,
-          "metaTags": undefined,
-          "name": undefined,
-          "of": "./Button.stories",
-          "title": undefined,
-        }
-      `);
-    });
-    it('Meta tags', () => {
+  describe('metaTags', () => {
+    it('tags', async () => {
       const input = dedent`
         import meta, { Basic } from './Button.stories';
 
@@ -362,7 +272,7 @@ describe('analyze', () => {
 
         {/* whatever */}
       `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
           "imports": [
             "./Button.stories",
@@ -373,6 +283,110 @@ describe('analyze', () => {
             "b",
             "c",
           ],
+          "name": undefined,
+          "of": "./Button.stories",
+          "title": undefined,
+        }
+      `);
+    });
+    it('non-string tag elements', async () => {
+      const input = dedent`
+        import meta, { Basic } from './Button.stories';
+
+        <Meta of={meta} tags={[1,2,3]} />
+
+        {/* whatever */}
+      `;
+      await expect(analyze(input)).rejects.toThrowErrorMatchingInlineSnapshot(
+        `[Error: Expected string literal tag, received Literal]`
+      );
+    });
+    it('non-array tags', async () => {
+      const input = dedent`
+        import meta, { Basic } from './Button.stories';
+
+        <Meta of={meta} tags="foo" />
+
+        {/* whatever */}
+      `;
+      await expect(analyze(input)).rejects.toThrowErrorMatchingInlineSnapshot(
+        `[Error: Expected JSX expression tags, received Literal]`
+      );
+    });
+  });
+
+  describe('errors', () => {
+    it('no title', async () => {
+      const input = dedent`
+      # hello
+    `;
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
+        {
+          "imports": [],
+          "isTemplate": false,
+          "metaTags": undefined,
+          "name": undefined,
+          "of": undefined,
+          "title": undefined,
+        }
+      `);
+    });
+    it('Bad MDX formatting', async () => {
+      const input = dedent`
+        import meta, { Basic } from './Button.stories';
+
+        <Meta of={meta} />/>
+      `;
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
+        {
+          "imports": [
+            "./Button.stories",
+          ],
+          "isTemplate": false,
+          "metaTags": undefined,
+          "name": undefined,
+          "of": undefined,
+          "title": undefined,
+        }
+      `);
+    });
+    it('duplicate meta, both title', async () => {
+      const input = dedent`
+        <Meta title="foobar" />
+
+        <Meta title="bz" />
+      `;
+      await expect(analyze(input)).rejects.toThrowErrorMatchingInlineSnapshot(
+        `[Error: Meta can only be declared once]`
+      );
+    });
+    it('duplicate meta, different', async () => {
+      const input = dedent`
+        import * as ButtonStories from './Button.stories';
+
+        <Meta title="foobar" />
+
+        <Meta of={ButtonStories} />
+      `;
+      await expect(analyze(input)).rejects.toThrowErrorMatchingInlineSnapshot(
+        `[Error: Meta can only be declared once]`
+      );
+    });
+    it('MDX comments', async () => {
+      const input = dedent`
+        import meta, { Basic } from './Button.stories';
+
+        <Meta of={meta} />
+
+        {/* whatever */}
+      `;
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
+        {
+          "imports": [
+            "./Button.stories",
+          ],
+          "isTemplate": false,
+          "metaTags": undefined,
           "name": undefined,
           "of": "./Button.stories",
           "title": undefined,
