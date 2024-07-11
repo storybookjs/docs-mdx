@@ -8,7 +8,6 @@ export default defineConfig([
       entry: ['./src/index.ts'],
     },
     clean: true,
-    metafile: true,
     esbuildOptions(options, context) {
       options.platform = 'node';
     },
