@@ -77,7 +77,6 @@ const getTags = (elt: JSXOpeningElement): string[] | undefined => {
 const getIsTemplate = (elt: JSXOpeningElement): boolean => {
   const isTemplateAttr = getAttr(elt, 'isTemplate') as JSXSimpleAttribute | undefined;
   if (!isTemplateAttr) return false;
-  console.log({ isTemplateAttr });
   const isTemplate = (isTemplateAttr as any).value;
   if (isTemplate == null) {
     // no value, implicit true
