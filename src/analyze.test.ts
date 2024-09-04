@@ -337,6 +337,9 @@ describe('analyze', () => {
     `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [
+            "hello",
+          ],
           "imports": [],
           "isTemplate": false,
           "metaTags": undefined,
@@ -354,6 +357,7 @@ describe('analyze', () => {
       `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [],
           "imports": [
             "./Button.stories",
           ],
@@ -420,7 +424,7 @@ describe('analyze', () => {
 
         <Meta title="foobar" />
       `;
-      expect(analyze(input)).toMatchInlineSnapshot(`
+      expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
           "headings": [
             "hello world",
@@ -429,6 +433,7 @@ describe('analyze', () => {
           ],
           "imports": [],
           "isTemplate": false,
+          "metaTags": undefined,
           "name": undefined,
           "of": undefined,
           "title": "foobar",
