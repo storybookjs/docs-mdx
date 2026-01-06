@@ -50,6 +50,7 @@ describe('analyze', () => {
           "metaTags": undefined,
           "name": undefined,
           "of": undefined,
+          "summary": undefined,
           "title": "foobar",
         }
       `);
@@ -80,6 +81,7 @@ describe('analyze', () => {
           "metaTags": undefined,
           "name": "foobar",
           "of": undefined,
+          "summary": undefined,
           "title": undefined,
         }
       `);
@@ -114,6 +116,7 @@ describe('analyze', () => {
           "metaTags": undefined,
           "name": undefined,
           "of": "./Button.stories",
+          "summary": undefined,
           "title": undefined,
         }
       `);
@@ -154,6 +157,7 @@ describe('analyze', () => {
           "metaTags": undefined,
           "name": undefined,
           "of": "./Button.stories",
+          "summary": undefined,
           "title": undefined,
         }
       `);
@@ -182,6 +186,7 @@ describe('analyze', () => {
           "metaTags": undefined,
           "name": "Story One",
           "of": "../src/A.stories",
+          "summary": undefined,
           "title": undefined,
         }
       `);
@@ -199,6 +204,33 @@ describe('analyze', () => {
     });
   });
 
+  describe('summary', () => {
+    it('string literal summary', async () => {
+      const input = dedent`
+        <Meta summary="This is a summary." />
+      `;
+      await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
+        {
+          "imports": [],
+          "isTemplate": false,
+          "metaTags": undefined,
+          "name": undefined,
+          "of": undefined,
+          "summary": "This is a summary.",
+          "title": undefined,
+        }
+      `);
+    });
+    it('template literal summary', async () => {
+      const input = dedent`
+        <Meta summary={\`This is a summary.\`} />
+      `;
+      await expect(() => analyze(input)).rejects.toThrowErrorMatchingInlineSnapshot(
+        `[Error: Expected string literal summary, received JSXExpressionContainer]`
+      );
+    });
+  });
+
   describe('isTemplate', () => {
     it('boolean implicit', async () => {
       const input = dedent`
@@ -211,6 +243,7 @@ describe('analyze', () => {
           "metaTags": undefined,
           "name": undefined,
           "of": undefined,
+          "summary": undefined,
           "title": undefined,
         }
       `);
@@ -226,6 +259,7 @@ describe('analyze', () => {
           "metaTags": undefined,
           "name": undefined,
           "of": undefined,
+          "summary": undefined,
           "title": undefined,
         }
       `);
@@ -241,6 +275,7 @@ describe('analyze', () => {
           "metaTags": undefined,
           "name": undefined,
           "of": undefined,
+          "summary": undefined,
           "title": undefined,
         }
       `);
@@ -285,6 +320,7 @@ describe('analyze', () => {
           ],
           "name": undefined,
           "of": "./Button.stories",
+          "summary": undefined,
           "title": undefined,
         }
       `);
@@ -327,6 +363,7 @@ describe('analyze', () => {
           "metaTags": undefined,
           "name": undefined,
           "of": undefined,
+          "summary": undefined,
           "title": undefined,
         }
       `);
@@ -346,6 +383,7 @@ describe('analyze', () => {
           "metaTags": undefined,
           "name": undefined,
           "of": undefined,
+          "summary": undefined,
           "title": undefined,
         }
       `);
@@ -389,6 +427,7 @@ describe('analyze', () => {
           "metaTags": undefined,
           "name": undefined,
           "of": "./Button.stories",
+          "summary": undefined,
           "title": undefined,
         }
       `);
