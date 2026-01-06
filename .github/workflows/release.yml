@@ -2,6 +2,11 @@ name: Release
 
 on: [push]
 
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -9,23 +14,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: "Set git user"
+        run: |
+          git config --global user.name 'storybook-bot'
+          git config --global user.email '32066757+storybook-bot@users.noreply.github.com'
+
       - name: Prepare repository
         run: git fetch --unshallow --tags
 
-      - name: Use Node.js 18.x
-        uses: actions/setup-node@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 24.x
 
       - name: Enable Corepack
         run: corepack enable
-  
-      - name: Install dependencies
-        uses: bahmutov/npm-install@v1
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: "yarn"
+
+      - name: Install Node.js dependencies
+        run: yarn install --immutable
 
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           yarn release
