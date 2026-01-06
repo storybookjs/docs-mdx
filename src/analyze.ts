@@ -94,10 +94,17 @@ const getIsTemplate = (elt: JSXOpeningElement): boolean => {
 };
 
 const extractTitle = (root: Program, varToImport: Record<string, string>) => {
-  const result = { title: undefined, of: undefined, name: undefined, isTemplate: false } as {
+  const result = {
+    title: undefined,
+    of: undefined,
+    name: undefined,
+    summary: undefined,
+    isTemplate: false,
+  } as {
     title: string | undefined;
     of: string | undefined;
     name: string | undefined;
+    summary: string | undefined;
     isTemplate: boolean;
     metaTags: string[] | undefined;
   };
@@ -119,6 +126,7 @@ const extractTitle = (root: Program, varToImport: Record<string, string>) => {
         }
         result.title = getAttrLiteral(openingElement, 'title');
         result.name = getAttrLiteral(openingElement, 'name');
+        result.summary = getAttrLiteral(openingElement, 'summary');
         result.of = getOf(openingElement, varToImport);
         result.isTemplate = getIsTemplate(openingElement);
         result.metaTags = getTags(openingElement);
@@ -153,10 +161,11 @@ export const extractImports = (root: Program) => {
 export const plugin = (store: any) => (root: any) => {
   const estree = toEstree(root);
   const varToImport = extractImports(estree);
-  const { title, of, name, isTemplate, metaTags } = extractTitle(estree, varToImport);
+  const { title, of, name, summary, isTemplate, metaTags } = extractTitle(estree, varToImport);
   store.title = title;
   store.of = of;
   store.name = name;
+  store.summary = summary;
   store.isTemplate = isTemplate;
   store.metaTags = metaTags;
   store.imports = Array.from(new Set(Object.values(varToImport)));
@@ -177,6 +186,6 @@ export const analyze = async (code: string) => {
   await compile(code, {
     rehypePlugins: [[plugin, store]],
   });
-  const { title, of, name, isTemplate, metaTags, imports = [] } = store;
-  return { title, of, name, isTemplate, metaTags, imports };
+  const { title, of, name, summary, isTemplate, metaTags, imports = [] } = store;
+  return { title, of, name, summary, isTemplate, metaTags, imports };
 };
