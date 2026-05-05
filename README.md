@@ -1,3 +1,5 @@
+> This package is no longer maintained, its functionality has been inlined into the core Storybook package: https://github.com/storybookjs/storybook/pull/34611
+
 ## @storybook/docs-mdx
 
 Storybook MDX docs is a small library that analyzes the contents of a `.docs.mdx` file and produces metadata about its contents.
