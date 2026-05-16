@@ -1,4 +1,6 @@
 import { toEstree } from 'hast-util-to-estree';
+import { selectAll } from 'hast-util-select';
+import { toString } from 'hast-util-to-string';
 import type { Program, ExpressionStatement } from 'hast-util-to-estree/lib';
 import type {
   JSXFragment,
@@ -158,6 +160,17 @@ export const extractImports = (root: Program) => {
   return varToImport;
 };
 
+export const getHeadings = (root: any) => {
+  const headings = [] as string[];
+  ['h1', 'h2', 'h3', 'h4'].forEach((tag) => {
+    selectAll(tag, root).forEach((node: any) => {
+      const heading = toString(node);
+      headings.push(heading);
+    });
+  });
+  return headings;
+};
+
 export const plugin = (store: any) => (root: any) => {
   const estree = toEstree(root);
   const varToImport = extractImports(estree);
@@ -169,6 +182,7 @@ export const plugin = (store: any) => (root: any) => {
   store.isTemplate = isTemplate;
   store.metaTags = metaTags;
   store.imports = Array.from(new Set(Object.values(varToImport)));
+  store.headings = getHeadings(root);
 
   return root;
 };
@@ -186,6 +200,6 @@ export const analyze = async (code: string) => {
   await compile(code, {
     rehypePlugins: [[plugin, store]],
   });
-  const { title, of, name, summary, isTemplate, metaTags, imports = [] } = store;
-  return { title, of, name, summary, isTemplate, metaTags, imports };
+  const { title, of, name, summary, isTemplate, metaTags, imports = [], headings = [] } = store;
+  return { title, of, name, summary, isTemplate, metaTags, imports, headings };
 };

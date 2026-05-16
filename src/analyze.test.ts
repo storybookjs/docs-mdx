@@ -45,6 +45,9 @@ describe('analyze', () => {
       `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [
+            "hello",
+          ],
           "imports": [],
           "isTemplate": false,
           "metaTags": undefined,
@@ -76,6 +79,9 @@ describe('analyze', () => {
       `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [
+            "hello",
+          ],
           "imports": [],
           "isTemplate": false,
           "metaTags": undefined,
@@ -108,6 +114,7 @@ describe('analyze', () => {
       `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [],
           "imports": [
             "@storybook/blocks",
             "./Button.stories",
@@ -149,6 +156,7 @@ describe('analyze', () => {
       `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [],
           "imports": [
             "@storybook/blocks",
             "./Button.stories",
@@ -179,6 +187,9 @@ describe('analyze', () => {
       `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [
+            "Docs with of",
+          ],
           "imports": [
             "../src/A.stories",
           ],
@@ -238,6 +249,7 @@ describe('analyze', () => {
       `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [],
           "imports": [],
           "isTemplate": true,
           "metaTags": undefined,
@@ -254,6 +266,7 @@ describe('analyze', () => {
       `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [],
           "imports": [],
           "isTemplate": true,
           "metaTags": undefined,
@@ -270,6 +283,7 @@ describe('analyze', () => {
       `;
       expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [],
           "imports": [],
           "isTemplate": false,
           "metaTags": undefined,
@@ -309,6 +323,7 @@ describe('analyze', () => {
       `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [],
           "imports": [
             "./Button.stories",
           ],
@@ -358,6 +373,9 @@ describe('analyze', () => {
     `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [
+            "hello",
+          ],
           "imports": [],
           "isTemplate": false,
           "metaTags": undefined,
@@ -376,6 +394,7 @@ describe('analyze', () => {
       `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [],
           "imports": [
             "./Button.stories",
           ],
@@ -420,6 +439,7 @@ describe('analyze', () => {
       `;
       await expect(analyze(input)).resolves.toMatchInlineSnapshot(`
         {
+          "headings": [],
           "imports": [
             "./Button.stories",
           ],
@@ -429,6 +449,33 @@ describe('analyze', () => {
           "of": "./Button.stories",
           "summary": undefined,
           "title": undefined,
+        }
+      `);
+    });
+  });
+
+  describe('headings', () => {
+    it('markdown', () => {
+      const input = dedent`
+        # hello **world**
+        ## Goodbye
+        ### Hi <b>again</b>
+
+        <Meta title="foobar" />
+      `;
+      expect(analyze(input)).resolves.toMatchInlineSnapshot(`
+        {
+          "headings": [
+            "hello world",
+            "Goodbye",
+            "Hi again",
+          ],
+          "imports": [],
+          "isTemplate": false,
+          "metaTags": undefined,
+          "name": undefined,
+          "of": undefined,
+          "title": "foobar",
         }
       `);
     });
